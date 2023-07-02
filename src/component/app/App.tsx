@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, JSX, Match, Switch } from 'solid-js'
+import { createEffect, createSignal, For, JSX, Match, onMount, Switch } from 'solid-js'
 
 import styles from './App.module.sass'
 import { ParseNode } from 'nois/dist/parser'
@@ -10,6 +10,16 @@ import { Parser } from 'nois/dist/parser/parser'
 import { parseModule } from 'nois/dist/parser/fns'
 import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
+import { editor } from 'monaco-editor'
+
+const parseNodeToHtml = (node: ParseNode): JSX.Element => {
+    return <div class={styles.parseNode}>
+        <p class={styles.kind}>{node.kind}{'value' in node ? <span>: {node.value}</span> : ''}</p>
+        <div class={styles.child}>
+            {'nodes' in node ? node.nodes.map(parseNodeToHtml) : ''}
+        </div>
+    </div>
+}
 
 const App: Component = () => {
     const defaultCode = `\
@@ -22,6 +32,27 @@ fn main() {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
+    let editorContainer: HTMLDivElement | undefined
+    let ed: editor.IStandaloneCodeEditor | undefined
+
+    onMount(() => {
+        ed = editor.create(editorContainer!, {
+            value: code(),
+            language: 'rust',
+            automaticLayout: true,
+            theme: 'vs-dark',
+            fontSize: 16,
+            fontFamily: 'JetBrains Mono',
+            contextmenu: false,
+        })
+
+        editor.setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'vs-dark' : 'vs')
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            editor.setTheme(event.matches ? 'vs-dark' : 'vs')
+        })
+
+        ed.getModel()?.onDidChangeContent(() => setCode(ed!.getValue()))
+    })
 
     createEffect(() => {
         useColoredOutput(false)
@@ -50,23 +81,13 @@ fn main() {
         setSyntaxErrors(undefined)
     })
 
-    const toHtml = (node: ParseNode): JSX.Element => {
-        return <div class={styles.parseNode}>
-            <p class={styles.kind}>{node.kind}{'value' in node ? <span>: {node.value}</span> : ''}</p>
-            <div class={styles.child}>
-                {'nodes' in node ? node.nodes.map(toHtml) : ''}
-            </div>
-        </div>
-    }
     return (
         <div class={styles.App}>
-            <div class={styles.editor}>
-                <textarea value={code()} onkeyup={e => setCode((e.target as HTMLTextAreaElement).value)}/>
-            </div>
+            <div ref={editorContainer} class={styles.editorContainer}/>
             <div class={styles.rightPanel}>
                 <Switch>
                     <Match when={module()}>
-                        <div class={styles.parseTreeViewer}>{toHtml(module()!.parseNode)}</div>
+                        <div class={styles.parseTreeViewer}>{parseNodeToHtml(module()!.parseNode)}</div>
                     </Match>
                     <Match when={errorTokens()}>
                         <div class={styles.lexerErrorViewer}>
