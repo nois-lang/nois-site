@@ -46,10 +46,17 @@ fn main() {
             contextmenu: false,
         })
 
-        editor.setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'vs-dark' : 'vs')
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            editor.setTheme(event.matches ? 'vs-dark' : 'vs')
+        editor.defineTheme('nois-dark', {
+            base: 'vs-dark', inherit: true, rules: [], colors: {
+                'editor.background': '#222222',
+                'editor.foreground': '#ffffff',
+            }
         })
+        editor.defineTheme('nois-light', { base: 'vs', inherit: true, rules: [], colors: {} })
+
+        const setTheme = (dark: boolean) => editor.setTheme(dark ? 'nois-dark' : 'nois-light')
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches)
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => setTheme(event.matches))
 
         ed.getModel()?.onDidChangeContent(() => setCode(ed!.getValue()))
     })
