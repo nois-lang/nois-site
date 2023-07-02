@@ -16,7 +16,8 @@
     "vite-plugin-solid": "~2.7.0"
   },
   "dependencies": {
-    "solid-js": "~1.7.6",
-    "sass": "~1.63.6"
+    "nois": "github:nois-lang/nois#overhaul",
+    "sass": "~1.63.6",
+    "solid-js": "~1.7.6"
   }
 }
