@@ -44,6 +44,7 @@ fn main() {
             fontSize: 16,
             fontFamily: 'JetBrains Mono',
             contextmenu: false,
+            minimap: { enabled: false }
         })
 
         editor.defineTheme('nois-dark', {
