@@ -12,6 +12,16 @@ import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
 import { editor, Range } from 'monaco-editor'
 
+const formatValue = (value: string): string => {
+    return value
+        .replace('\b', '\\b')
+        .replace('\t', '\\t')
+        .replace('\n', '\\n')
+        .replace('\v', '\\v')
+        .replace('\f', '\\f')
+        .replace('\r', '\\r')
+}
+
 const App: Component = () => {
     const defaultCode = `\
 fn main() {
@@ -118,7 +128,7 @@ fn main() {
         >
             <p class={styles.kind}>{node.kind}{
                 'value' in node
-                    ? <code class={styles.value}>{node.value}</code>
+                    ? <code class={styles.value}>{formatValue(node.value)}</code>
                     : ''
             }</p>
             <div class={styles.child}>
