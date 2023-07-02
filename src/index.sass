@@ -3,11 +3,14 @@
 
 \:root
   --bg: #ffffff
+  --bg2: #aaaaaa
   --fg: #000000
+  --region: hsla(87, 100%, 42%, 0.4)
 
 @media (prefers-color-scheme: dark)
   \:root
     --bg: #222222
+    --bg2: #333333
     --fg: #ffffff
 
 body
@@ -28,3 +31,9 @@ html, body, #root
 
 pre
   font-family: 'JetBrains Mono', monospace
+
+code
+  font-family: 'JetBrains Mono', monospace
+  background-color: var(--bg2)
+  border-radius: 4px
+  padding: 2px 4px

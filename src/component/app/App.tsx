@@ -12,15 +12,6 @@ import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
 import { editor } from 'monaco-editor'
 
-const parseNodeToHtml = (node: ParseNode): JSX.Element => {
-    return <div class={styles.parseNode}>
-        <p class={styles.kind}>{node.kind}{'value' in node ? <span>: {node.value}</span> : ''}</p>
-        <div class={styles.child}>
-            {'nodes' in node ? node.nodes.map(parseNodeToHtml) : ''}
-        </div>
-    </div>
-}
-
 const App: Component = () => {
     const defaultCode = `\
 fn main() {
@@ -32,7 +23,8 @@ fn main() {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
-    let editorContainer: HTMLDivElement | undefined
+    const [hovered, setHovered] = createSignal()
+    let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
 
     onMount(() => {
@@ -44,7 +36,12 @@ fn main() {
             fontSize: 16,
             fontFamily: 'JetBrains Mono',
             contextmenu: false,
-            minimap: { enabled: false }
+            scrollBeyondLastLine: false,
+            minimap: { enabled: false },
+            overviewRulerLanes: 0,
+            folding: false,
+            renderWhitespace: 'all',
+            lineNumbersMinChars: 2
         })
 
         editor.defineTheme('nois-dark', {
@@ -61,6 +58,15 @@ fn main() {
 
         ed.getModel()?.onDidChangeContent(() => setCode(ed!.getValue()))
     })
+
+    /*
+    createEffect(() => {
+        ed!.createDecorationsCollection([{
+            range: new Range(1, 2, 2, 9),
+            options: { inlineClassName: styles.region }
+        }])
+    })
+    */
 
     createEffect(() => {
         useColoredOutput(false)
@@ -88,6 +94,31 @@ fn main() {
         setErrorTokens(undefined)
         setSyntaxErrors(undefined)
     })
+
+    const parseNodeToHtml = (node: ParseNode): JSX.Element => {
+        let ref: HTMLDivElement | undefined = undefined
+        return <div ref={ref} class={styles.parseNode}
+                    classList={{ [styles.hover]: hovered() === ref }}
+                    onpointerover={e => {
+                        if (!ref?.contains(e.target)) return
+                        setHovered(ref)
+                        e.stopPropagation()
+                    }}
+                    onpointerleave={e => {
+                        if (!ref?.contains(e.target)) return
+                        setHovered(undefined)
+                    }}
+        >
+            <p class={styles.kind}>{node.kind}{
+                'value' in node
+                    ? <code class={styles.value}>{node.value}</code>
+                    : ''
+            }</p>
+            <div class={styles.child}>
+                {'nodes' in node ? node.nodes.map(parseNodeToHtml) : ''}
+            </div>
+        </div>
+    }
 
     return (
         <div class={styles.App}>
