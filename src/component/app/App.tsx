@@ -2,7 +2,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, JSX, Match, onMount, Switch } from 'solid-js'
 
 import styles from './App.module.sass'
-import { ParseNode } from 'nois/dist/parser'
+import { getLocationRange, ParseNode } from 'nois/dist/parser'
 import { erroneousTokenKinds, ParseToken, tokenize } from 'nois/dist/lexer/lexer'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError, SyntaxError } from 'nois/dist/error'
 import { indexToLocation } from 'nois/dist/location'
@@ -10,7 +10,7 @@ import { Parser } from 'nois/dist/parser/parser'
 import { parseModule } from 'nois/dist/parser/fns'
 import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
-import { editor } from 'monaco-editor'
+import { editor, Range } from 'monaco-editor'
 
 const App: Component = () => {
     const defaultCode = `\
@@ -23,7 +23,7 @@ fn main() {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
-    const [hovered, setHovered] = createSignal()
+    const [hovered, setHovered] = createSignal<{ ref: HTMLDivElement, node: ParseNode }>()
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
 
@@ -59,14 +59,21 @@ fn main() {
         ed.getModel()?.onDidChangeContent(() => setCode(ed!.getValue()))
     })
 
-    /*
     createEffect(() => {
+        ed!.removeDecorations(ed!.getModel()!.getAllDecorations().map(d => d.id))
+
+        if (!hovered()) return
+
+        const { node } = hovered()!
+        const range = getLocationRange(node)
+        const start = indexToLocation(range.start, source())!
+        const end = indexToLocation(range.end, source())!
         ed!.createDecorationsCollection([{
-            range: new Range(1, 2, 2, 9),
+            // + 1 because location is 0 indexed, + 2 because location.end is inclusive
+            range: new Range(start.line + 1, start.column + 1, end.line + 1, end.column + 2),
             options: { inlineClassName: styles.region }
         }])
     })
-    */
 
     createEffect(() => {
         useColoredOutput(false)
@@ -98,10 +105,10 @@ fn main() {
     const parseNodeToHtml = (node: ParseNode): JSX.Element => {
         let ref: HTMLDivElement | undefined = undefined
         return <div ref={ref} class={styles.parseNode}
-                    classList={{ [styles.hover]: hovered() === ref }}
+                    classList={{ [styles.hover]: hovered()?.ref === ref }}
                     onpointerover={e => {
                         if (!ref?.contains(e.target)) return
-                        setHovered(ref)
+                        setHovered({ ref, node })
                         e.stopPropagation()
                     }}
                     onpointerleave={e => {
