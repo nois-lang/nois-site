@@ -10,7 +10,7 @@ import { Parser } from 'nois/dist/parser/parser'
 import { parseModule } from 'nois/dist/parser/fns'
 import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
-import { editor, Range } from 'monaco-editor'
+import { editor, Range } from 'monaco-editor/esm/vs/editor/editor.api'
 import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
 

@@ -5,7 +5,7 @@ import monacoEditorPlugin from 'vite-plugin-monaco-editor'
 export default defineConfig({
     plugins: [
         solidPlugin(),
-        monacoEditorPlugin({})
+        monacoEditorPlugin({ languageWorkers: ['editorWorkerService'] })
     ],
     server: {
         port: 3000,
