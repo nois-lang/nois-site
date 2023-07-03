@@ -3,15 +3,20 @@
 
 \:root
   --bg: #ffffff
-  --bg2: #aaaaaa
+  --bg2: #eeeeee
+  --bg3: #dddddd
   --fg: #000000
+  --fg2: #111111
   --region: hsla(87, 100%, 42%, 0.4)
+  --special: #c955e7
 
 @media (prefers-color-scheme: dark)
   \:root
     --bg: #222222
     --bg2: #333333
+    --bg3: #555555
     --fg: #ffffff
+    --fg2: #eeeeee
 
 body
   background-color: var(--bg)
@@ -40,3 +45,16 @@ code
 
 p
   margin: 0
+
+a
+  color: var(--fg)
+  text-decoration: none
+
+  &:hover
+    color: var(--special)
+
+i
+  color: var(--fg)
+
+  &:hover
+    color: var(--special)

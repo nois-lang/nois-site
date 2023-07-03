@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, JSX, Match, onMount, Switch } from 'solid-js'
 
-import styles from './App.module.sass'
+import styles from './Playground.module.sass'
 import { getLocationRange, ParseNode } from 'nois/dist/parser'
 import { erroneousTokenKinds, ParseToken, tokenize } from 'nois/dist/lexer/lexer'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError, SyntaxError } from 'nois/dist/error'
@@ -11,6 +11,8 @@ import { parseModule } from 'nois/dist/parser/fns'
 import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
 import { editor, Range } from 'monaco-editor'
+import logo from '../../assets/logo_full.svg'
+import { A } from '@solidjs/router'
 
 const formatValue = (value: string): string => {
     return value
@@ -22,7 +24,7 @@ const formatValue = (value: string): string => {
         .replace('\r', '\\r')
 }
 
-const App: Component = () => {
+export const Playground: Component = () => {
     const defaultCode = `\
 fn main() {
     println("Hello, World!")
@@ -131,14 +133,20 @@ fn main() {
                     ? <code class={styles.value}>{formatValue(node.value)}</code>
                     : ''
             }</p>
-            <div class={styles.child}>
+            <div class={styles.children}>
                 {'nodes' in node ? node.nodes.map(parseNodeToHtml) : ''}
             </div>
         </div>
     }
 
     return (
-        <div class={styles.App}>
+        <div class={styles.Playground}>
+            <div class={styles.header}>
+                <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
+                <div class={styles.right}>
+                    <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
+                </div>
+            </div>
             <div ref={editorContainer} class={styles.editorContainer}/>
             <div class={styles.rightPanel}>
                 <Switch>
@@ -176,5 +184,3 @@ fn main() {
         </div>
     )
 }
-
-export default App
