@@ -4,7 +4,7 @@ import { createEffect, createSignal, For, JSX, Match, onMount, Switch } from 'so
 import styles from './Playground.module.sass'
 import { getLocationRange, ParseNode } from 'nois/dist/parser'
 import { erroneousTokenKinds, ParseToken, tokenize } from 'nois/dist/lexer/lexer'
-import { prettyLexerError, prettySourceMessage, prettySyntaxError, SyntaxError } from 'nois/dist/error'
+import { prettyLexerError, prettySyntaxError, SyntaxError } from 'nois/dist/error'
 import { indexToLocation } from 'nois/dist/location'
 import { Parser } from 'nois/dist/parser/parser'
 import { parseModule } from 'nois/dist/parser/fns'
@@ -14,6 +14,7 @@ import 'monaco-editor/esm/vs/basic-languages/rust/rust.contribution'
 import { editor, Range } from 'monaco-editor/esm/vs/editor/editor.api'
 import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
+import { LangError } from '../lang-error/LangError'
 
 const formatValue = (value: string): string => {
     return value
@@ -25,51 +26,61 @@ const formatValue = (value: string): string => {
         .replace('\r', '\\r')
 }
 
+const createEditor = (container: HTMLDivElement): editor.IStandaloneCodeEditor => {
+
+    editor.defineTheme('nois-dark', {
+        base: 'vs-dark', inherit: true, rules: [], colors: {
+            'editor.background': '#222222',
+            'editor.foreground': '#ffffff',
+        }
+    })
+    editor.defineTheme('nois-light', { base: 'vs', inherit: true, rules: [], colors: {} })
+
+    const ed = editor.create(container, {
+        language: 'rust',
+        automaticLayout: true,
+        fontSize: 16,
+        fontFamily: 'JetBrains Mono',
+        contextmenu: false,
+        scrollBeyondLastLine: false,
+        minimap: { enabled: false },
+        overviewRulerLanes: 0,
+        folding: false,
+        renderWhitespace: 'all',
+        lineNumbersMinChars: 2
+    })
+
+    const setTheme = (dark: boolean) => editor.setTheme(dark ? 'nois-dark' : 'nois-light')
+    setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => setTheme(event.matches))
+
+    return ed
+}
+
 export const Playground: Component = () => {
     const defaultCode = `\
 fn main() {
     println("Hello, World!")
 }`
-    const [code, setCode] = createSignal(defaultCode)
     const source = () => ({ str: code(), filename: 'test.no' })
     const vid = { scope: [], name: 'test' }
+
+    const [code, setCode] = createSignal(defaultCode)
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
     const [hovered, setHovered] = createSignal<{ ref: HTMLDivElement, node: ParseNode }>()
+
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
 
     onMount(() => {
-        ed = editor.create(editorContainer!, {
-            value: code(),
-            language: 'rust',
-            automaticLayout: true,
-            theme: 'vs-dark',
-            fontSize: 16,
-            fontFamily: 'JetBrains Mono',
-            contextmenu: false,
-            scrollBeyondLastLine: false,
-            minimap: { enabled: false },
-            overviewRulerLanes: 0,
-            folding: false,
-            renderWhitespace: 'all',
-            lineNumbersMinChars: 2
-        })
-
-        editor.defineTheme('nois-dark', {
-            base: 'vs-dark', inherit: true, rules: [], colors: {
-                'editor.background': '#222222',
-                'editor.foreground': '#ffffff',
-            }
-        })
-        editor.defineTheme('nois-light', { base: 'vs', inherit: true, rules: [], colors: {} })
-
-        const setTheme = (dark: boolean) => editor.setTheme(dark ? 'nois-dark' : 'nois-light')
-        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches)
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => setTheme(event.matches))
-
+        ed = createEditor(editorContainer!)
         ed.getModel()?.onDidChangeContent(() => setCode(ed!.getValue()))
+    })
+
+    createEffect(() => {
+        ed?.setValue(code())
     })
 
     createEffect(() => {
@@ -92,27 +103,21 @@ fn main() {
         useColoredOutput(false)
         const tokens = tokenize(source().str)
         const errorTs = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
-        if (errorTs.length > 0) {
-            setErrorTokens(errorTs)
-            setModule(undefined)
-            setSyntaxErrors(undefined)
-            return
-        }
+        setErrorTokens(errorTs)
 
         const parser = new Parser(tokens)
         parseModule(parser)
         const root = parser.buildTree()
 
-        if (parser.errors.length > 0) {
-            setSyntaxErrors(parser.errors)
-            setErrorTokens(undefined)
-            setModule(undefined)
-            return
-        }
+        setSyntaxErrors(parser.errors)
 
-        setModule(buildModuleAst(root, vid))
-        setErrorTokens(undefined)
-        setSyntaxErrors(undefined)
+        if (errorTs.length === 0 && parser.errors.length === 0) {
+            setModule(buildModuleAst(root, vid))
+            setErrorTokens(undefined)
+            setSyntaxErrors(undefined)
+        } else {
+            setModule(undefined)
+        }
     })
 
     const parseNodeToHtml = (node: ParseNode): JSX.Element => {
@@ -140,6 +145,26 @@ fn main() {
         </div>
     }
 
+    const allErrors = () => [
+        ...(
+            errorTokens()?.map(t => ({
+                message: prettyLexerError(t),
+                location: t.location.start
+            }))
+            || []),
+        ...(
+            syntaxErrors()?.map(e => ({
+                message: prettySyntaxError(e),
+                location: e.got.location.start
+            }))
+            || [])
+    ]
+    const errors = <div class={styles.errors}>
+        <For each={allErrors()}>{({ message, location }) =>
+            <LangError message={message} location={indexToLocation(location, source())!} source={source()}/>
+        }</For>
+    </div>
+
     return (
         <div class={styles.Playground}>
             <div class={styles.header}>
@@ -154,32 +179,7 @@ fn main() {
                     <Match when={module()}>
                         <div class={styles.parseTreeViewer}>{parseNodeToHtml(module()!.parseNode)}</div>
                     </Match>
-                    <Match when={errorTokens()}>
-                        <div class={styles.lexerErrorViewer}>
-                            <For each={errorTokens()}>{t =>
-                                <pre>
-                                {prettySourceMessage(
-                                    prettyLexerError(t),
-                                    indexToLocation(t.location.start, source())!,
-                                    source()
-                                )}
-                                </pre>}
-                            </For>
-                        </div>
-                    </Match>
-                    <Match when={syntaxErrors()}>
-                        <div class={styles.syntaxErrorViewer}>
-                            <For each={syntaxErrors()}>{e =>
-                                <pre>
-                                {prettySourceMessage(
-                                    prettySyntaxError(e),
-                                    indexToLocation(e.got.location.start, source())!,
-                                    source()
-                                )}
-                            </pre>
-                            }</For>
-                        </div>
-                    </Match>
+                    <Match when={true}>{errors}</Match>
                 </Switch>
             </div>
         </div>
