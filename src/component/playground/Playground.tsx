@@ -1,8 +1,7 @@
-import type { Accessor, Component, Setter } from 'solid-js'
-import { createEffect, createSignal, For, JSX, Match, onMount, Switch } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, createSignal, For, Match, onMount, Switch } from 'solid-js'
 
 import styles from './Playground.module.sass'
-import { getLocationRange, ParseNode } from 'nois/dist/parser'
 import { erroneousTokenKinds, ParseToken, tokenize } from 'nois/dist/lexer/lexer'
 import { prettyLexerError, prettySyntaxError, SyntaxError } from 'nois/dist/error'
 import { indexToLocation, LocationRange } from 'nois/dist/location'
@@ -15,6 +14,9 @@ import { editor, Range } from 'monaco-editor/esm/vs/editor/editor.api'
 import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
 import { LangError } from '../lang-error/LangError'
+import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
+
+export const [hovered, setHovered] = createSignal<RefLocationPair>()
 
 export const Playground: Component = () => {
     const defaultCode = `\
@@ -28,14 +30,13 @@ fn main() {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
-    const [hovered, setHovered] = createSignal<RefLocationPair>()
 
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
 
     onMount(() => {
         ed = createEditor(editorContainer!, defaultCode)
-        ed.getModel()?.onDidChangeContent(() => setCode(ed!.getValue()))
+        ed.getModel()?.onDidChangeContent(() => { setCode(ed!.getValue()) })
     })
 
     const updateParseTreeHighlight = () => {
@@ -88,12 +89,6 @@ fn main() {
             }))
             || [])
     ]
-    const errors = <div class={styles.errors}>
-        <For each={allErrors()}>{({ message, location }) =>
-            <LangError message={message} location={indexToLocation(location, source())!} source={source()}/>
-        }</For>
-    </div>
-
     return (
         <div class={styles.Playground}>
             <Header/>
@@ -101,11 +96,16 @@ fn main() {
             <div class={styles.rightPanel}>
                 <Switch>
                     <Match when={module()}>
-                        <div class={styles.treeViewer}>
-                            {parseNodeToHtml(module()!.parseNode, hovered, setHovered)}
-                        </div>
+                        <ParseTreePreview node={module()!.parseNode}/>
                     </Match>
-                    <Match when={true}>{errors}</Match>
+                    <Match when={true}>{
+                        <div class={styles.errors}>
+                            <For each={allErrors()}>{({ message, location }) =>
+                                <LangError message={message} location={indexToLocation(location, source())!}
+                                           source={source()}/>
+                            }</For>
+                        </div>
+                    }</Match>
                 </Switch>
             </div>
         </div>
@@ -122,45 +122,6 @@ const Header: Component = () => <div class={styles.header}>
 interface RefLocationPair {
     ref: HTMLDivElement,
     location: LocationRange
-}
-
-const formatValue = (value: string): string => {
-    return value
-        .replace('\b', '\\b')
-        .replace('\t', '\\t')
-        .replace('\n', '\\n')
-        .replace('\v', '\\v')
-        .replace('\f', '\\f')
-        .replace('\r', '\\r')
-}
-
-const parseNodeToHtml = (node: ParseNode,
-                         hovered: Accessor<RefLocationPair | undefined>,
-                         setHovered: Setter<RefLocationPair | undefined>): JSX.Element => {
-    let ref: HTMLDivElement | undefined = undefined
-    return (
-        <div ref={ref} class={styles.node}
-             classList={{ [styles.hover]: hovered()?.ref === ref }}
-             onpointerover={e => {
-                 if (!ref?.contains(e.target)) return
-                 setHovered({ ref, location: getLocationRange(node) })
-                 e.stopPropagation()
-             }}
-             onpointerleave={e => {
-                 if (!ref?.contains(e.target)) return
-                 setHovered(undefined)
-             }}
-        >
-            <p class={styles.kind}>{node.kind}{
-                'value' in node
-                    ? <code class={styles.value}>{formatValue(node.value)}</code>
-                    : ''
-            }</p>
-            <div class={styles.children}>
-                {'nodes' in node ? node.nodes.map(n => parseNodeToHtml(n, hovered, setHovered)) : ''}
-            </div>
-        </div>
-    )
 }
 
 const createEditor = (container: HTMLDivElement, value: string): editor.IStandaloneCodeEditor => {

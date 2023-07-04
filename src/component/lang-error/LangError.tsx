@@ -4,7 +4,9 @@ import { prettySourceMessage } from 'nois/dist/error'
 import { Component } from 'solid-js'
 import styles from './LangError.module.sass'
 
-export const LangError: Component<{ message: string, location: Location, source: Source }> = (props) => {
-    let msg = prettySourceMessage(props.message, props.location, props.source)
+type LangErrorProps = { message: string, location: Location, source: Source }
+
+export const LangError: Component<LangErrorProps> = p => {
+    let msg = prettySourceMessage(p.message, p.location, p.source)
     return <pre class={styles.LangError}>{msg}</pre>
 }
