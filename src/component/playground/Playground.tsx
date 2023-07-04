@@ -19,8 +19,9 @@ import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
+export const [tab, setTab] = createSignal<Tab>('ast-tree')
 
-type Tab = 'parseTree' | 'astTree'
+type Tab = 'parse-tree' | 'ast-tree'
 
 export const Playground: Component = () => {
     const defaultCode = `\
@@ -34,7 +35,6 @@ fn main() {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
-    const [tab, setTab] = createSignal<Tab>('astTree')
 
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
@@ -102,13 +102,13 @@ fn main() {
                 <Switch>
                     <Match when={module()}>
                         <Switch>
-                            <Match when={tab() === 'parseTree'}>
+                            <Match when={tab() === 'parse-tree'}>
                                 <ParseTreePreview node={module()!.parseNode}/>
                             </Match>
-                            <Match when={tab() === 'astTree'}>
+                            <Match when={tab() === 'ast-tree'}>
                                 <button type={'button'}
                                         class={styles.groupsToggle}
-                                        title={'Toggle AST Groups'}
+                                        title={'Toggle AST groups'}
                                         onClick={() => setShowGroups(!showGroups())}
                                 >
                                     <i class="fa-solid fa-layer-group"/>
@@ -132,9 +132,17 @@ fn main() {
 }
 
 const Header: Component = () => <div class={styles.header}>
-    <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
-    <div class={styles.right}>
-        <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
+    <div>
+        <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
+    </div>
+    <div>
+        <select onChange={e => setTab(e.target.value as Tab)}>
+            <option value={'parse-tree'}>{'Parse tree'}</option>
+            <option value={'ast-tree'}>{'AST tree'}</option>
+        </select>
+        <div class={styles.right}>
+            <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
+        </div>
     </div>
 </div>
 
