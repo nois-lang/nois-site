@@ -14,7 +14,7 @@ import { editor, Range } from 'monaco-editor/esm/vs/editor/editor.api'
 import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
 import { LangError } from '../lang-error/LangError'
-import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
+import { AstTreePreview, destructureAstNode } from '../ast-tree-preview/AstTreePreview'
 
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
 
@@ -96,7 +96,8 @@ fn main() {
             <div class={styles.rightPanel}>
                 <Switch>
                     <Match when={module()}>
-                        <ParseTreePreview node={module()!.parseNode}/>
+                        {/*<ParseTreePreview node={module()!.parseNode}/>*/}
+                        <AstTreePreview node={destructureAstNode(module()!)}/>
                     </Match>
                     <Match when={true}>{
                         <div class={styles.errors}>
