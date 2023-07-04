@@ -16,81 +16,6 @@ import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
 import { LangError } from '../lang-error/LangError'
 
-interface RefNodePair {
-    ref: HTMLDivElement,
-    node: ParseNode
-}
-
-const formatValue = (value: string): string => {
-    return value
-        .replace('\b', '\\b')
-        .replace('\t', '\\t')
-        .replace('\n', '\\n')
-        .replace('\v', '\\v')
-        .replace('\f', '\\f')
-        .replace('\r', '\\r')
-}
-
-const parseNodeToHtml = (node: ParseNode,
-                         hovered: Accessor<RefNodePair | undefined>,
-                         setHovered: Setter<RefNodePair | undefined>): JSX.Element => {
-    let ref: HTMLDivElement | undefined = undefined
-    return (
-        <div ref={ref} class={styles.parseNode}
-             classList={{ [styles.hover]: hovered()?.ref === ref }}
-             onpointerover={e => {
-                 if (!ref?.contains(e.target)) return
-                 setHovered({ ref, node })
-                 e.stopPropagation()
-             }}
-             onpointerleave={e => {
-                 if (!ref?.contains(e.target)) return
-                 setHovered(undefined)
-             }}
-        >
-            <p class={styles.kind}>{node.kind}{
-                'value' in node
-                    ? <code class={styles.value}>{formatValue(node.value)}</code>
-                    : ''
-            }</p>
-            <div class={styles.children}>
-                {'nodes' in node ? node.nodes.map(n => parseNodeToHtml(n, hovered, setHovered)) : ''}
-            </div>
-        </div>
-    )
-}
-
-const createEditor = (container: HTMLDivElement, value: string): editor.IStandaloneCodeEditor => {
-
-    editor.defineTheme('nois-dark', {
-        base: 'vs-dark', inherit: true, rules: [], colors: {
-            'editor.background': '#222222',
-            'editor.foreground': '#ffffff',
-        }
-    })
-    editor.defineTheme('nois-light', { base: 'vs', inherit: true, rules: [], colors: {} })
-
-    const ed = editor.create(container, {
-        language: 'rust',
-        value,
-        automaticLayout: true,
-        fontSize: 16,
-        contextmenu: false,
-        scrollBeyondLastLine: false,
-        minimap: { enabled: false },
-        overviewRulerLanes: 0,
-        folding: false,
-        renderWhitespace: 'all',
-        lineNumbersMinChars: 2
-    })
-
-    const setTheme = (dark: boolean) => editor.setTheme(dark ? 'nois-dark' : 'nois-light')
-    setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches)
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => setTheme(event.matches))
-
-    return ed
-}
-
 export const Playground: Component = () => {
     const defaultCode = `\
 fn main() {
@@ -172,22 +97,100 @@ fn main() {
 
     return (
         <div class={styles.Playground}>
-            <div class={styles.header}>
-                <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
-                <div class={styles.right}>
-                    <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
-                </div>
-            </div>
+            <Header/>
             <div ref={editorContainer} class={styles.editorContainer}/>
             <div class={styles.rightPanel}>
                 <Switch>
                     <Match when={module()}>
-                        <div
-                            class={styles.parseTreeViewer}>{parseNodeToHtml(module()!.parseNode, hovered, setHovered)}</div>
+                        <div class={styles.parseTreeViewer}>
+                            {parseNodeToHtml(module()!.parseNode, hovered, setHovered)}
+                        </div>
                     </Match>
                     <Match when={true}>{errors}</Match>
                 </Switch>
             </div>
         </div>
     )
+}
+
+const Header: Component = () => <div class={styles.header}>
+    <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
+    <div class={styles.right}>
+        <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
+    </div>
+</div>
+
+interface RefNodePair {
+    ref: HTMLDivElement,
+    node: ParseNode
+}
+
+const formatValue = (value: string): string => {
+    return value
+        .replace('\b', '\\b')
+        .replace('\t', '\\t')
+        .replace('\n', '\\n')
+        .replace('\v', '\\v')
+        .replace('\f', '\\f')
+        .replace('\r', '\\r')
+}
+
+const parseNodeToHtml = (node: ParseNode,
+                         hovered: Accessor<RefNodePair | undefined>,
+                         setHovered: Setter<RefNodePair | undefined>): JSX.Element => {
+    let ref: HTMLDivElement | undefined = undefined
+    return (
+        <div ref={ref} class={styles.parseNode}
+             classList={{ [styles.hover]: hovered()?.ref === ref }}
+             onpointerover={e => {
+                 if (!ref?.contains(e.target)) return
+                 setHovered({ ref, node })
+                 e.stopPropagation()
+             }}
+             onpointerleave={e => {
+                 if (!ref?.contains(e.target)) return
+                 setHovered(undefined)
+             }}
+        >
+            <p class={styles.kind}>{node.kind}{
+                'value' in node
+                    ? <code class={styles.value}>{formatValue(node.value)}</code>
+                    : ''
+            }</p>
+            <div class={styles.children}>
+                {'nodes' in node ? node.nodes.map(n => parseNodeToHtml(n, hovered, setHovered)) : ''}
+            </div>
+        </div>
+    )
+}
+
+const createEditor = (container: HTMLDivElement, value: string): editor.IStandaloneCodeEditor => {
+
+    editor.defineTheme('nois-dark', {
+        base: 'vs-dark', inherit: true, rules: [], colors: {
+            'editor.background': '#222222',
+            'editor.foreground': '#ffffff',
+        }
+    })
+    editor.defineTheme('nois-light', { base: 'vs', inherit: true, rules: [], colors: {} })
+
+    const ed = editor.create(container, {
+        language: 'rust',
+        value,
+        automaticLayout: true,
+        fontSize: 16,
+        contextmenu: false,
+        scrollBeyondLastLine: false,
+        minimap: { enabled: false },
+        overviewRulerLanes: 0,
+        folding: false,
+        renderWhitespace: 'all',
+        lineNumbersMinChars: 2
+    })
+
+    const setTheme = (dark: boolean) => editor.setTheme(dark ? 'nois-dark' : 'nois-light')
+    setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => setTheme(event.matches))
+
+    return ed
 }
