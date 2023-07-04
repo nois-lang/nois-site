@@ -26,7 +26,7 @@ const formatValue = (value: string): string => {
         .replace('\r', '\\r')
 }
 
-const createEditor = (container: HTMLDivElement): editor.IStandaloneCodeEditor => {
+const createEditor = (container: HTMLDivElement, value: string): editor.IStandaloneCodeEditor => {
 
     editor.defineTheme('nois-dark', {
         base: 'vs-dark', inherit: true, rules: [], colors: {
@@ -38,6 +38,7 @@ const createEditor = (container: HTMLDivElement): editor.IStandaloneCodeEditor =
 
     const ed = editor.create(container, {
         language: 'rust',
+        value,
         automaticLayout: true,
         fontSize: 16,
         fontFamily: 'JetBrains Mono',
@@ -75,12 +76,8 @@ fn main() {
     let ed: editor.IStandaloneCodeEditor | undefined
 
     onMount(() => {
-        ed = createEditor(editorContainer!)
+        ed = createEditor(editorContainer!, defaultCode)
         ed.getModel()?.onDidChangeContent(() => setCode(ed!.getValue()))
-    })
-
-    createEffect(() => {
-        ed?.setValue(code())
     })
 
     createEffect(() => {
@@ -103,18 +100,16 @@ fn main() {
         useColoredOutput(false)
         const tokens = tokenize(source().str)
         const errorTs = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
-        setErrorTokens(errorTs)
+        setErrorTokens(errorTs.length !== 0 ? errorTs : undefined)
 
         const parser = new Parser(tokens)
         parseModule(parser)
-        const root = parser.buildTree()
+        const parseTree = parser.buildTree()
 
-        setSyntaxErrors(parser.errors)
+        setSyntaxErrors(parser.errors.length !== 0 ? parser.errors : undefined)
 
         if (errorTs.length === 0 && parser.errors.length === 0) {
-            setModule(buildModuleAst(root, vid))
-            setErrorTokens(undefined)
-            setSyntaxErrors(undefined)
+            setModule(buildModuleAst(parseTree, vid))
         } else {
             setModule(undefined)
         }
@@ -122,27 +117,29 @@ fn main() {
 
     const parseNodeToHtml = (node: ParseNode): JSX.Element => {
         let ref: HTMLDivElement | undefined = undefined
-        return <div ref={ref} class={styles.parseNode}
-                    classList={{ [styles.hover]: hovered()?.ref === ref }}
-                    onpointerover={e => {
-                        if (!ref?.contains(e.target)) return
-                        setHovered({ ref, node })
-                        e.stopPropagation()
-                    }}
-                    onpointerleave={e => {
-                        if (!ref?.contains(e.target)) return
-                        setHovered(undefined)
-                    }}
-        >
-            <p class={styles.kind}>{node.kind}{
-                'value' in node
-                    ? <code class={styles.value}>{formatValue(node.value)}</code>
-                    : ''
-            }</p>
-            <div class={styles.children}>
-                {'nodes' in node ? node.nodes.map(parseNodeToHtml) : ''}
+        return (
+            <div ref={ref} class={styles.parseNode}
+                 classList={{ [styles.hover]: hovered()?.ref === ref }}
+                 onpointerover={e => {
+                     if (!ref?.contains(e.target)) return
+                     setHovered({ ref, node })
+                     e.stopPropagation()
+                 }}
+                 onpointerleave={e => {
+                     if (!ref?.contains(e.target)) return
+                     setHovered(undefined)
+                 }}
+            >
+                <p class={styles.kind}>{node.kind}{
+                    'value' in node
+                        ? <code class={styles.value}>{formatValue(node.value)}</code>
+                        : ''
+                }</p>
+                <div class={styles.children}>
+                    {'nodes' in node ? node.nodes.map(parseNodeToHtml) : ''}
+                </div>
             </div>
-        </div>
+        )
     }
 
     const allErrors = () => [
