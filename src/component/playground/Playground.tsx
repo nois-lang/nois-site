@@ -5,7 +5,7 @@ import styles from './Playground.module.sass'
 import { getLocationRange, ParseNode } from 'nois/dist/parser'
 import { erroneousTokenKinds, ParseToken, tokenize } from 'nois/dist/lexer/lexer'
 import { prettyLexerError, prettySyntaxError, SyntaxError } from 'nois/dist/error'
-import { indexToLocation } from 'nois/dist/location'
+import { indexToLocation, LocationRange } from 'nois/dist/location'
 import { Parser } from 'nois/dist/parser/parser'
 import { parseModule } from 'nois/dist/parser/fns'
 import { buildModuleAst, Module } from 'nois/dist/ast'
@@ -28,7 +28,7 @@ fn main() {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
-    const [hovered, setHovered] = createSignal<RefNodePair>()
+    const [hovered, setHovered] = createSignal<RefLocationPair>()
 
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
@@ -43,10 +43,9 @@ fn main() {
 
         if (!hovered()) return
 
-        const { node } = hovered()!
-        const range = getLocationRange(node)
-        const start = indexToLocation(range.start, source())!
-        const end = indexToLocation(range.end, source())!
+        const { location } = hovered()!
+        const start = indexToLocation(location.start, source())!
+        const end = indexToLocation(location.end, source())!
         ed!.createDecorationsCollection([{
             // + 1 because location is 0 indexed, + 2 because location.end is inclusive
             range: new Range(start.line + 1, start.column + 1, end.line + 1, end.column + 2),
@@ -102,7 +101,7 @@ fn main() {
             <div class={styles.rightPanel}>
                 <Switch>
                     <Match when={module()}>
-                        <div class={styles.parseTreeViewer}>
+                        <div class={styles.treeViewer}>
                             {parseNodeToHtml(module()!.parseNode, hovered, setHovered)}
                         </div>
                     </Match>
@@ -120,9 +119,9 @@ const Header: Component = () => <div class={styles.header}>
     </div>
 </div>
 
-interface RefNodePair {
+interface RefLocationPair {
     ref: HTMLDivElement,
-    node: ParseNode
+    location: LocationRange
 }
 
 const formatValue = (value: string): string => {
@@ -136,15 +135,15 @@ const formatValue = (value: string): string => {
 }
 
 const parseNodeToHtml = (node: ParseNode,
-                         hovered: Accessor<RefNodePair | undefined>,
-                         setHovered: Setter<RefNodePair | undefined>): JSX.Element => {
+                         hovered: Accessor<RefLocationPair | undefined>,
+                         setHovered: Setter<RefLocationPair | undefined>): JSX.Element => {
     let ref: HTMLDivElement | undefined = undefined
     return (
-        <div ref={ref} class={styles.parseNode}
+        <div ref={ref} class={styles.node}
              classList={{ [styles.hover]: hovered()?.ref === ref }}
              onpointerover={e => {
                  if (!ref?.contains(e.target)) return
-                 setHovered({ ref, node })
+                 setHovered({ ref, location: getLocationRange(node) })
                  e.stopPropagation()
              }}
              onpointerleave={e => {
