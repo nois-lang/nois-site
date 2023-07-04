@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js'
+import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, createSignal, For, JSX, Match, onMount, Switch } from 'solid-js'
 
 import styles from './Playground.module.sass'
@@ -16,6 +16,11 @@ import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
 import { LangError } from '../lang-error/LangError'
 
+interface RefNodePair {
+    ref: HTMLDivElement,
+    node: ParseNode
+}
+
 const formatValue = (value: string): string => {
     return value
         .replace('\b', '\\b')
@@ -24,6 +29,35 @@ const formatValue = (value: string): string => {
         .replace('\v', '\\v')
         .replace('\f', '\\f')
         .replace('\r', '\\r')
+}
+
+const parseNodeToHtml = (node: ParseNode,
+                         hovered: Accessor<RefNodePair | undefined>,
+                         setHovered: Setter<RefNodePair | undefined>): JSX.Element => {
+    let ref: HTMLDivElement | undefined = undefined
+    return (
+        <div ref={ref} class={styles.parseNode}
+             classList={{ [styles.hover]: hovered()?.ref === ref }}
+             onpointerover={e => {
+                 if (!ref?.contains(e.target)) return
+                 setHovered({ ref, node })
+                 e.stopPropagation()
+             }}
+             onpointerleave={e => {
+                 if (!ref?.contains(e.target)) return
+                 setHovered(undefined)
+             }}
+        >
+            <p class={styles.kind}>{node.kind}{
+                'value' in node
+                    ? <code class={styles.value}>{formatValue(node.value)}</code>
+                    : ''
+            }</p>
+            <div class={styles.children}>
+                {'nodes' in node ? node.nodes.map(n => parseNodeToHtml(n, hovered, setHovered)) : ''}
+            </div>
+        </div>
+    )
 }
 
 const createEditor = (container: HTMLDivElement, value: string): editor.IStandaloneCodeEditor => {
@@ -41,7 +75,6 @@ const createEditor = (container: HTMLDivElement, value: string): editor.IStandal
         value,
         automaticLayout: true,
         fontSize: 16,
-        fontFamily: 'JetBrains Mono',
         contextmenu: false,
         scrollBeyondLastLine: false,
         minimap: { enabled: false },
@@ -70,7 +103,7 @@ fn main() {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
-    const [hovered, setHovered] = createSignal<{ ref: HTMLDivElement, node: ParseNode }>()
+    const [hovered, setHovered] = createSignal<RefNodePair>()
 
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
@@ -80,7 +113,7 @@ fn main() {
         ed.getModel()?.onDidChangeContent(() => setCode(ed!.getValue()))
     })
 
-    createEffect(() => {
+    const updateParseTreeHighlight = () => {
         ed!.removeDecorations(ed!.getModel()!.getAllDecorations().map(d => d.id))
 
         if (!hovered()) return
@@ -94,9 +127,10 @@ fn main() {
             range: new Range(start.line + 1, start.column + 1, end.line + 1, end.column + 2),
             options: { inlineClassName: styles.region }
         }])
-    })
+    }
+    createEffect(updateParseTreeHighlight)
 
-    createEffect(() => {
+    const updateCode = () => {
         useColoredOutput(false)
         const tokens = tokenize(source().str)
         const errorTs = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
@@ -113,34 +147,8 @@ fn main() {
         } else {
             setModule(undefined)
         }
-    })
-
-    const parseNodeToHtml = (node: ParseNode): JSX.Element => {
-        let ref: HTMLDivElement | undefined = undefined
-        return (
-            <div ref={ref} class={styles.parseNode}
-                 classList={{ [styles.hover]: hovered()?.ref === ref }}
-                 onpointerover={e => {
-                     if (!ref?.contains(e.target)) return
-                     setHovered({ ref, node })
-                     e.stopPropagation()
-                 }}
-                 onpointerleave={e => {
-                     if (!ref?.contains(e.target)) return
-                     setHovered(undefined)
-                 }}
-            >
-                <p class={styles.kind}>{node.kind}{
-                    'value' in node
-                        ? <code class={styles.value}>{formatValue(node.value)}</code>
-                        : ''
-                }</p>
-                <div class={styles.children}>
-                    {'nodes' in node ? node.nodes.map(parseNodeToHtml) : ''}
-                </div>
-            </div>
-        )
     }
+    createEffect(updateCode)
 
     const allErrors = () => [
         ...(
@@ -174,7 +182,8 @@ fn main() {
             <div class={styles.rightPanel}>
                 <Switch>
                     <Match when={module()}>
-                        <div class={styles.parseTreeViewer}>{parseNodeToHtml(module()!.parseNode)}</div>
+                        <div
+                            class={styles.parseTreeViewer}>{parseNodeToHtml(module()!.parseNode, hovered, setHovered)}</div>
                     </Match>
                     <Match when={true}>{errors}</Match>
                 </Switch>
