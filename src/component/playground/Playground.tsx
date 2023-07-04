@@ -15,8 +15,12 @@ import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
 import { LangError } from '../lang-error/LangError'
 import { AstTreePreview, destructureAstNode } from '../ast-tree-preview/AstTreePreview'
+import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
+export const [showGroups, setShowGroups] = createSignal(false)
+
+type Tab = 'parseTree' | 'astTree'
 
 export const Playground: Component = () => {
     const defaultCode = `\
@@ -30,6 +34,7 @@ fn main() {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
+    const [tab, setTab] = createSignal<Tab>('astTree')
 
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
@@ -96,8 +101,21 @@ fn main() {
             <div class={styles.rightPanel}>
                 <Switch>
                     <Match when={module()}>
-                        {/*<ParseTreePreview node={module()!.parseNode}/>*/}
-                        <AstTreePreview node={destructureAstNode(module()!)}/>
+                        <Switch>
+                            <Match when={tab() === 'parseTree'}>
+                                <ParseTreePreview node={module()!.parseNode}/>
+                            </Match>
+                            <Match when={tab() === 'astTree'}>
+                                <button type={'button'}
+                                        class={styles.groupsToggle}
+                                        title={'Toggle AST Groups'}
+                                        onClick={() => setShowGroups(!showGroups())}
+                                >
+                                    <i class="fa-solid fa-layer-group"/>
+                                </button>
+                                <AstTreePreview node={destructureAstNode(module()!)}/>
+                            </Match>
+                        </Switch>
                     </Match>
                     <Match when={true}>{
                         <div class={styles.errors}>

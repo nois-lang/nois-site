@@ -1,6 +1,6 @@
-import { Component } from 'solid-js'
+import { Component, Match, Switch } from 'solid-js'
 import { getLocationRange, ParseNode } from 'nois/dist/parser'
-import { hovered, setHovered } from '../playground/Playground'
+import { hovered, setHovered, showGroups } from '../playground/Playground'
 import styles from './AstTreePreview.module.sass'
 import { AstNode } from 'nois/dist/ast'
 
@@ -40,29 +40,44 @@ type AstTreePreviewProps = { node: DestructuredAstNode }
 
 export const AstTreePreview: Component<AstTreePreviewProps> = p => {
     let ref: HTMLDivElement | undefined = undefined
+
+    const isGroup = !p.node.value && !p.node.parseNode
     return (
-        <div ref={ref} class={styles.node}
-             classList={{ [styles.hover]: hovered()?.ref === ref }}
-             onpointerover={e => {
-                 if (!ref?.contains(e.target)) return
-                 if (!p.node.parseNode) return
-                 setHovered({ ref, location: getLocationRange(p.node.parseNode) })
-                 e.stopPropagation()
-             }}
-             onpointerleave={e => {
-                 if (!ref?.contains(e.target)) return
-                 setHovered(undefined)
-             }}
-        >
-            <p class={styles.kind} classList={{ [styles.group]: !p.node.value && !p.node.parseNode }}>{p.node.kind}{
-                p.node.value !== undefined
-                    ? <code class={styles.value}>{formatValue(p.node.value)}</code>
-                    : ''
-            }</p>
-            <div class={styles.children}>
-                {p.node.children !== undefined ? p.node.children.map(c => <AstTreePreview node={c}/>) : ''}
-            </div>
-        </div>
+        <Switch>
+            <Match when={isGroup && !showGroups()}>
+                <div class={styles.children}>{
+                    p.node.children !== undefined
+                        ? p.node.children.map(c => <AstTreePreview node={c}/>)
+                        : ''
+                }</div>
+            </Match>
+            <Match when={true}>
+                <div ref={ref} class={styles.node}
+                     classList={{ [styles.hover]: hovered()?.ref === ref }}
+                     onPointerOver={e => {
+                         if (!ref?.contains(e.target)) return
+                         if (!p.node.parseNode) return
+                         setHovered({ ref, location: getLocationRange(p.node.parseNode) })
+                         e.stopPropagation()
+                     }}
+                     onPointerLeave={e => {
+                         if (!ref?.contains(e.target)) return
+                         setHovered(undefined)
+                     }}
+                >
+                    <p class={styles.kind} classList={{ [styles.group]: isGroup }}>{p.node.kind}{
+                        p.node.value !== undefined
+                            ? <code class={styles.value}>{formatValue(p.node.value)}</code>
+                            : ''
+                    }</p>
+                    <div class={styles.children}>{
+                        p.node.children !== undefined
+                            ? p.node.children.map(c => <AstTreePreview node={c}/>)
+                            : ''
+                    }</div>
+                </div>
+            </Match>
+        </Switch>
     )
 }
 

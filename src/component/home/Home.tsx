@@ -12,7 +12,7 @@ export const Home: Component = () => {
                     <A href={'/'}>Home</A>
                     <A href={'/play'}>Playground</A>
                     <div class={styles.right}>
-                        <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
+                        <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"/></A>
                     </div>
                 </div>
                 <div class={styles.hero}>
