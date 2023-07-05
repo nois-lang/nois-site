@@ -60,6 +60,7 @@ export const noisMonarchLanguage: languages.IMonarchLanguage = {
                 }
             ],
             [/"/, { token: 'string.quote', bracket: '@open', next: '@string' }],
+            [/'/, { token: 'char.quote', bracket: '@open', next: '@char' }],
             { include: '@numbers' },
             { include: '@whitespace' },
             [
@@ -89,6 +90,12 @@ export const noisMonarchLanguage: languages.IMonarchLanguage = {
             [/@escapes/, 'string.escape'],
             [/\\./, 'string.escape.invalid'],
             [/"/, { token: 'string.quote', bracket: '@close', next: '@pop' }]
+        ],
+        char: [
+            [/[^\\']+/, 'char'],
+            [/@escapes/, 'char.escape'],
+            [/\\./, 'char.escape.invalid'],
+            [/'/, { token: 'char.quote', bracket: '@close', next: '@pop' }]
         ],
         numbers: [
             //Float
