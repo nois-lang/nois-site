@@ -136,7 +136,7 @@ const Header: Component = () => <div class={styles.header}>
         <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
     </div>
     <div>
-        <select onChange={e => setTab(e.target.value as Tab)}>
+        <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>
             <option value={'parse-tree'}>{'Parse tree'}</option>
             <option value={'ast-tree'}>{'AST tree'}</option>
         </select>
