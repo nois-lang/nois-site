@@ -9,7 +9,7 @@ import { Parser } from 'nois/dist/parser/parser'
 import { parseModule } from 'nois/dist/parser/fns'
 import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
-import { editor, languages, Range } from 'monaco-editor/esm/vs/editor/editor.api'
+import { editor, languages, MarkerSeverity, Range } from 'monaco-editor/esm/vs/editor/editor.api'
 import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
 import { LangError } from '../lang-error/LangError'
@@ -17,6 +17,7 @@ import { AstTreePreview, destructureAstNode } from '../ast-tree-preview/AstTreeP
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 import { noisLanguageConfiguration, noisMonarchLanguage } from '../../lang/syntax'
 import { noisDarkTheme, noisLightTheme } from '../../lang/theme'
+import { Source } from 'nois/dist/source'
 
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
@@ -44,7 +45,7 @@ impl Area for Shape {
 }
 
 fn main() {
-    let shape: Shape = Rect(2)
+    let shape: Shape = Rect(width: 4, height: 2)
     println(shape.area())
 }`
 
@@ -66,16 +67,16 @@ export const Playground: Component = () => {
     })
 
     const updateParseTreeHighlight = () => {
-        ed!.removeDecorations(ed!.getModel()!.getAllDecorations().map(d => d.id))
+        ed!.removeDecorations(
+            ed!.getModel()!.getAllDecorations()
+                .filter(d => d.options.inlineClassName === styles.region)
+                .map(d => d.id)
+        )
 
         if (!hovered()) return
 
-        const { location } = hovered()!
-        const start = indexToLocation(location.start, source())!
-        const end = indexToLocation(location.end, source())!
         ed!.createDecorationsCollection([{
-            // + 1 because location is 0 indexed, + 2 because location.end is inclusive
-            range: new Range(start.line + 1, start.column + 1, end.line + 1, end.column + 2),
+            range: locationRangeToRange(hovered()!.location, source()),
             options: { inlineClassName: styles.region },
         }])
     }
@@ -98,6 +99,31 @@ export const Playground: Component = () => {
         } else {
             setModule(undefined)
         }
+
+        ed!.removeDecorations(
+            ed!.getModel()!.getAllDecorations()
+                .filter(d => d.options.inlineClassName === styles.unknownToken)
+                .map(d => d.id)
+        )
+        errorTs.forEach(t => {
+            ed!.createDecorationsCollection([{
+                range: locationRangeToRange(t.location, source()),
+                options: { inlineClassName: styles.unknownToken },
+            }])
+        })
+
+        const errorMarkers: editor.IMarkerData[] = parser.errors.map(e => {
+            const range = locationRangeToRange(e.got.location, source())
+            return {
+                startLineNumber: range.startLineNumber,
+                startColumn: range.startColumn,
+                endLineNumber: range.endLineNumber,
+                endColumn: range.endColumn,
+                message: prettySyntaxError(e),
+                severity: MarkerSeverity.Error
+            }
+        })
+        editor.setModelMarkers(ed!.getModel()!, 'nois', errorMarkers)
     }
     createEffect(updateCode)
 
@@ -201,4 +227,11 @@ const createEditor = (container: HTMLDivElement, value: string): editor.IStandal
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => setTheme(event.matches))
 
     return ed
+}
+
+const locationRangeToRange = (locationRange: LocationRange, source: Source): Range => {
+    const start = indexToLocation(locationRange.start, source)!
+    const end = indexToLocation(locationRange.end, source)!
+    // + 1 because location is 0 indexed, + 2 because location.end is inclusive
+    return new Range(start.line + 1, start.column + 1, end.line + 1, end.column + 2)
 }
