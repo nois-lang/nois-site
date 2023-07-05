@@ -17,7 +17,6 @@ export const destructureAstNode = (node: AstNode<any>): DestructuredAstNode => {
     const children: DestructuredAstNode[] =
         Object.entries(node)
             .filter(([p,]) => !['parseNode', 'kind', 'value'].includes(p))
-            .map(([p, v]) => [structuredClone(p), structuredClone(v)])
             .flatMap(([p, v]) => {
                 if (v === undefined) {
                     return [{ kind: p }]

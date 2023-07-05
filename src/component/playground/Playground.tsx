@@ -9,13 +9,14 @@ import { Parser } from 'nois/dist/parser/parser'
 import { parseModule } from 'nois/dist/parser/fns'
 import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
-import 'monaco-editor/esm/vs/basic-languages/rust/rust.contribution'
-import { editor, Range } from 'monaco-editor/esm/vs/editor/editor.api'
+import { editor, languages, Range } from 'monaco-editor/esm/vs/editor/editor.api'
 import logo from '../../assets/logo_full.svg'
 import { A } from '@solidjs/router'
 import { LangError } from '../lang-error/LangError'
 import { AstTreePreview, destructureAstNode } from '../ast-tree-preview/AstTreePreview'
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
+import { noisLanguageConfiguration, noisMonarchLanguage } from '../../lang/syntax'
+import { noisDarkTheme, noisLightTheme } from '../../lang/theme'
 
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
@@ -23,11 +24,31 @@ export const [tab, setTab] = createSignal<Tab>('ast-tree')
 
 type Tab = 'parse-tree' | 'ast-tree'
 
-export const Playground: Component = () => {
-    const defaultCode = `\
+const defaultCode = `\
+kind Area {
+    fn area(self): Float
+}
+
+type Shape {
+    Rect(width: Num, height: Num),
+    Circle(side: Num),
+}
+
+impl Area for Shape {
+    fn area(self): Float {
+        match self {
+            Rect(w) -> w ^ 2,
+            Circle(r) -> Math.pi * r ^ 2
+        }
+    }
+}
+
 fn main() {
-    println("Hello, World!")
+    let shape: Shape = Rect(2)
+    println(shape.area())
 }`
+
+export const Playground: Component = () => {
     const source = () => ({ str: code(), filename: 'test.no' })
     const vid = { scope: [], name: 'test' }
 
@@ -55,7 +76,7 @@ fn main() {
         ed!.createDecorationsCollection([{
             // + 1 because location is 0 indexed, + 2 because location.end is inclusive
             range: new Range(start.line + 1, start.column + 1, end.line + 1, end.column + 2),
-            options: { inlineClassName: styles.region }
+            options: { inlineClassName: styles.region },
         }])
     }
     createEffect(updateParseTreeHighlight)
@@ -153,16 +174,15 @@ interface RefLocationPair {
 
 const createEditor = (container: HTMLDivElement, value: string): editor.IStandaloneCodeEditor => {
 
-    editor.defineTheme('nois-dark', {
-        base: 'vs-dark', inherit: true, rules: [], colors: {
-            'editor.background': '#222222',
-            'editor.foreground': '#ffffff',
-        }
-    })
-    editor.defineTheme('nois-light', { base: 'vs', inherit: true, rules: [], colors: {} })
+    editor.defineTheme('nois-light', noisLightTheme)
+    editor.defineTheme('nois-dark', noisDarkTheme)
+
+    languages.register({ id: 'nois' })
+    languages.setMonarchTokensProvider('nois', noisMonarchLanguage)
+    languages.setLanguageConfiguration('nois', noisLanguageConfiguration)
 
     const ed = editor.create(container, {
-        language: 'rust',
+        language: 'nois',
         value,
         automaticLayout: true,
         fontSize: 16,
@@ -171,8 +191,9 @@ const createEditor = (container: HTMLDivElement, value: string): editor.IStandal
         minimap: { enabled: false },
         overviewRulerLanes: 0,
         folding: false,
-        renderWhitespace: 'all',
-        lineNumbersMinChars: 2
+        lineNumbersMinChars: 2,
+        // @ts-ignore
+        'bracketPairColorization.enabled': false,
     })
 
     const setTheme = (dark: boolean) => editor.setTheme(dark ? 'nois-dark' : 'nois-light')
