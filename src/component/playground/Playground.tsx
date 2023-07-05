@@ -50,7 +50,7 @@ fn main() {
 }`
 
 export const Playground: Component = () => {
-    const source = () => ({ str: code(), filename: 'test.no' })
+    const source = (): Source => ({ code: code(), filepath: 'playground.no' })
     const vid = { scope: [], name: 'test' }
 
     const [code, setCode] = createSignal(defaultCode)
@@ -84,7 +84,7 @@ export const Playground: Component = () => {
 
     const updateCode = () => {
         useColoredOutput(false)
-        const tokens = tokenize(source().str)
+        const tokens = tokenize(source().code)
         const errorTs = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
         setErrorTokens(errorTs.length !== 0 ? errorTs : undefined)
 
@@ -95,7 +95,7 @@ export const Playground: Component = () => {
         setSyntaxErrors(parser.errors.length !== 0 ? parser.errors : undefined)
 
         if (errorTs.length === 0 && parser.errors.length === 0) {
-            setModule(buildModuleAst(parseTree, vid))
+            setModule(buildModuleAst(parseTree, vid, source()))
         } else {
             setModule(undefined)
         }
