@@ -26,7 +26,7 @@ export const [tab, setTab] = createSignal<Tab>('ast-tree')
 type Tab = 'parse-tree' | 'ast-tree'
 
 const defaultCode = `\
-use std::io::println
+use std::math
 
 kind Area {
     fn area(self): Num
@@ -41,7 +41,7 @@ impl Area for Shape {
     fn area(self): Num {
         match self {
             Rect(width, height) -> width * height,
-            Circle(radius) -> Math.pi * radius ^ 2
+            Circle(radius) -> math::pi * radius ^ 2
         }
     }
 }
@@ -146,6 +146,12 @@ export const Playground: Component = () => {
             }))
             || [])
     ]
+
+    createEffect(() => {
+        if (module()) {
+            console.log(destructureAstNode(module()!))
+        }
+    })
     return (
         <div class={styles.Playground}>
             <Header/>
