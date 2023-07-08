@@ -4,6 +4,13 @@ import { hovered, setHovered, showGroups } from '../playground/Playground'
 import styles from './AstTreePreview.module.sass'
 import { AstNode } from 'nois/dist/ast'
 
+export interface DestructuredAstNode {
+    kind: string,
+    parseNode?: ParseNode,
+    value?: string
+    children?: DestructuredAstNode[]
+}
+
 export const destructureAstNode = (node: AstNode<any>): DestructuredAstNode => {
     if (typeof node !== 'object' || !('parseNode' in node)) {
         throw Error('not an object')
@@ -20,9 +27,6 @@ export const destructureAstNode = (node: AstNode<any>): DestructuredAstNode => {
             .flatMap(([p, v]) => {
                 if (v === undefined) {
                     return [{ kind: p }]
-                }
-                if ('value' in v) {
-                    return [{ kind: p, parseNode, children: [destructureAstNode(v)] }]
                 }
                 if ('parseNode' in v) {
                     return [{ kind: p, children: [destructureAstNode(v)] }]
@@ -78,13 +82,6 @@ export const AstTreePreview: Component<AstTreePreviewProps> = p => {
             </Match>
         </Switch>
     )
-}
-
-interface DestructuredAstNode {
-    kind: string,
-    parseNode?: ParseNode,
-    value?: string
-    children?: DestructuredAstNode[]
 }
 
 const formatValue = (value: string): string => {
