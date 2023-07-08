@@ -17,7 +17,7 @@
     "vite-plugin-monaco-editor": "~1.1.0"
   },
   "dependencies": {
-    "nois": "github:nois-lang/nois#overhaul",
+    "nois": "github:nois-lang/nois",
     "sass": "~1.63.6",
     "solid-js": "~1.7.6",
     "@solidjs/router": "~0.8.2",
