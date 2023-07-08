@@ -147,11 +147,6 @@ export const Playground: Component = () => {
             || [])
     ]
 
-    createEffect(() => {
-        if (module()) {
-            console.log(destructureAstNode(module()!))
-        }
-    })
     return (
         <div class={styles.Playground}>
             <Header/>
