@@ -18,6 +18,8 @@ import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 import { noisLanguageConfiguration, noisMonarchLanguage } from '../../lang/syntax'
 import { noisDarkTheme, noisLightTheme } from '../../lang/theme'
 import { Source } from 'nois/dist/source'
+import { Toolbar } from '../toolbar/Toolbar'
+import { FatalError } from '../fatal-error/FatalError'
 
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
@@ -62,6 +64,7 @@ export const Playground: Component = () => {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
+    const [fatalError, setFatalError] = createSignal<Error>()
 
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
@@ -88,47 +91,56 @@ export const Playground: Component = () => {
     createEffect(updateParseTreeHighlight)
 
     const updateCode = () => {
-        useColoredOutput(false)
-        const tokens = tokenize(source().code)
-        const errorTs = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
-        setErrorTokens(errorTs.length !== 0 ? errorTs : undefined)
+        try {
+            useColoredOutput(false)
+            const tokens = tokenize(source().code)
+            const errorTs = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
+            setErrorTokens(errorTs.length !== 0 ? errorTs : undefined)
 
-        const parser = new Parser(tokens)
-        parseModule(parser)
-        const parseTree = parser.buildTree()
+            const parser = new Parser(tokens)
+            parseModule(parser)
+            const parseTree = parser.buildTree()
+            setSyntaxErrors(parser.errors.length !== 0 ? parser.errors : undefined)
 
-        setSyntaxErrors(parser.errors.length !== 0 ? parser.errors : undefined)
+            if (errorTs.length === 0 && parser.errors.length === 0) {
+                setModule(buildModuleAst(parseTree, vid, source()))
+            } else {
+                setModule(undefined)
+            }
 
-        if (errorTs.length === 0 && parser.errors.length === 0) {
-            setModule(buildModuleAst(parseTree, vid, source()))
-        } else {
+            ed!.removeDecorations(
+                ed!.getModel()!.getAllDecorations()
+                    .filter(d => d.options.inlineClassName === styles.unknownToken)
+                    .map(d => d.id)
+            )
+            errorTs.forEach(t => {
+                ed!.createDecorationsCollection([{
+                    range: locationRangeToRange(t.location, source()),
+                    options: { inlineClassName: styles.unknownToken },
+                }])
+            })
+
+            const errorMarkers: editor.IMarkerData[] = parser.errors.map(e => {
+                const range = locationRangeToRange(e.got.location, source())
+                return {
+                    startLineNumber: range.startLineNumber,
+                    startColumn: range.startColumn,
+                    endLineNumber: range.endLineNumber,
+                    endColumn: range.endColumn,
+                    message: prettySyntaxError(e),
+                    severity: MarkerSeverity.Error
+                }
+            })
+            editor.setModelMarkers(ed!.getModel()!, 'nois', errorMarkers)
+
+            setFatalError(undefined)
+        } catch (e) {
+            if (e instanceof Error) {
+                setFatalError(e)
+                console.warn(formatError(e, code()))
+            }
             setModule(undefined)
         }
-
-        ed!.removeDecorations(
-            ed!.getModel()!.getAllDecorations()
-                .filter(d => d.options.inlineClassName === styles.unknownToken)
-                .map(d => d.id)
-        )
-        errorTs.forEach(t => {
-            ed!.createDecorationsCollection([{
-                range: locationRangeToRange(t.location, source()),
-                options: { inlineClassName: styles.unknownToken },
-            }])
-        })
-
-        const errorMarkers: editor.IMarkerData[] = parser.errors.map(e => {
-            const range = locationRangeToRange(e.got.location, source())
-            return {
-                startLineNumber: range.startLineNumber,
-                startColumn: range.startColumn,
-                endLineNumber: range.endLineNumber,
-                endColumn: range.endColumn,
-                message: prettySyntaxError(e),
-                severity: MarkerSeverity.Error
-            }
-        })
-        editor.setModelMarkers(ed!.getModel()!, 'nois', errorMarkers)
     }
     createEffect(updateCode)
 
@@ -151,34 +163,40 @@ export const Playground: Component = () => {
         <div class={styles.Playground}>
             <Header/>
             <div ref={editorContainer} class={styles.editorContainer}/>
-            <div class={styles.rightPanel}>
-                <Switch>
-                    <Match when={module()}>
-                        <Switch>
-                            <Match when={tab() === 'parse-tree'}>
-                                <ParseTreePreview node={module()!.parseNode}/>
-                            </Match>
-                            <Match when={tab() === 'ast-tree'}>
-                                <button type={'button'}
-                                        class={styles.groupsToggle}
-                                        title={'Toggle AST groups'}
-                                        onClick={() => setShowGroups(!showGroups())}
-                                >
-                                    <i class="fa-solid fa-layer-group"/>
-                                </button>
-                                <AstTreePreview node={destructureAstNode(module()!)}/>
-                            </Match>
-                        </Switch>
-                    </Match>
-                    <Match when={true}>{
-                        <div class={styles.errors}>
-                            <For each={allErrors()}>{({ message, location }) =>
-                                <LangError message={message} location={indexToLocation(location, source())!}
-                                           source={source()}/>
-                            }</For>
-                        </div>
-                    }</Match>
-                </Switch>
+            <div class={styles.container}>
+                <div class={styles.rightPanel}>
+                    <Switch>
+                        <Match when={module()}>
+                            <Switch>
+                                <Match when={tab() === 'parse-tree'}>
+                                    <ParseTreePreview node={module()!.parseNode}/>
+                                </Match>
+                                <Match when={tab() === 'ast-tree'}>
+                                    <Toolbar>
+                                        <button type={'button'}
+                                                title={'Toggle AST groups'}
+                                                onClick={() => setShowGroups(!showGroups())}
+                                        >
+                                            <i class="fa-solid fa-layer-group"/>
+                                        </button>
+                                    </Toolbar>
+                                    <AstTreePreview node={destructureAstNode(module()!)}/>
+                                </Match>
+                            </Switch>
+                        </Match>
+                        <Match when={fatalError()}>
+                            <FatalError message={formatError(fatalError()!, code())}/>
+                        </Match>
+                        <Match when={true}>{
+                            <div class={styles.errors}>
+                                <For each={allErrors()}>{({ message, location }) =>
+                                    <LangError message={message} location={indexToLocation(location, source())!}
+                                               source={source()}/>
+                                }</For>
+                            </div>
+                        }</Match>
+                    </Switch>
+                </div>
             </div>
         </div>
     )
@@ -223,7 +241,8 @@ const createEditor = (container: HTMLDivElement, value: string): editor.IStandal
         minimap: { enabled: false },
         overviewRulerLanes: 0,
         folding: false,
-        lineNumbersMinChars: 2,
+        lineNumbersMinChars: 3,
+        padding: { top: 16, bottom: 16 },
         // @ts-ignore
         'bracketPairColorization.enabled': false,
     })
@@ -240,4 +259,9 @@ const locationRangeToRange = (locationRange: LocationRange, source: Source): Ran
     const end = indexToLocation(locationRange.end, source)!
     // + 1 because location is 0 indexed, + 2 because location.end is inclusive
     return new Range(start.line + 1, start.column + 1, end.line + 1, end.column + 2)
+}
+
+const formatError = (error: Error, code: string): string => {
+    const errorMsg = error.stack ?? `${error.name}: ${error.message}`
+    return `Code: ${JSON.stringify(code)}\n${errorMsg}`
 }
