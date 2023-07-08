@@ -243,6 +243,7 @@ const createEditor = (container: HTMLDivElement, value: string): editor.IStandal
         folding: false,
         lineNumbersMinChars: 3,
         padding: { top: 16, bottom: 16 },
+        scrollbar: { alwaysConsumeMouseWheel: false },
         // @ts-ignore
         'bracketPairColorization.enabled': false,
     })
