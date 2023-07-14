@@ -30,7 +30,7 @@ export const noisMonarchLanguage: languages.IMonarchLanguage = {
     keywords: [
         'use',
         'type',
-        'kind',
+        'trait',
         'if',
         'else',
         'return',

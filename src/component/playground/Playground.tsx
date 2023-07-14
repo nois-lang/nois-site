@@ -27,7 +27,7 @@ type Tab = 'parse-tree' | 'ast-tree'
 export const defaultCode = `\
 use std::math
 
-kind Area {
+trait Area {
     fn area(self): Num
 }
 
