@@ -1,6 +1,5 @@
 /* @refresh reload */
 import { render } from 'solid-js/web'
-
 import './index.sass'
 import { Playground } from './component/playground/Playground'
 import { Route, Router, Routes } from '@solidjs/router'

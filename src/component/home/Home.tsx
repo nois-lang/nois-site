@@ -1,6 +1,5 @@
 import type { Component } from 'solid-js'
 import logo from '../../assets/logo_full.svg'
-
 import styles from './Home.module.sass'
 import { A } from '@solidjs/router'
 

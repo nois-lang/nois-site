@@ -1,6 +1,5 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, Match, onMount, Switch } from 'solid-js'
-
 import styles from './Playground.module.sass'
 import { erroneousTokenKinds, ParseToken, tokenize } from 'nois/dist/lexer/lexer'
 import { prettyLexerError, prettySyntaxError, SyntaxError } from 'nois/dist/error'
