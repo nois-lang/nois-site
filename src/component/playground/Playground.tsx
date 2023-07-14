@@ -11,7 +11,7 @@ import { buildModuleAst, Module } from 'nois/dist/ast'
 import { useColoredOutput } from 'nois/dist/output'
 import { editor, languages, MarkerSeverity, Range } from 'monaco-editor/esm/vs/editor/editor.api'
 import logo from '../../assets/logo_full.svg'
-import { A } from '@solidjs/router'
+import { A, useSearchParams } from '@solidjs/router'
 import { LangError } from '../lang-error/LangError'
 import { AstTreePreview, destructureAstNode } from '../ast-tree-preview/AstTreePreview'
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
@@ -20,14 +20,12 @@ import { noisDarkTheme, noisLightTheme } from '../../lang/theme'
 import { Source } from 'nois/dist/source'
 import { Toolbar } from '../toolbar/Toolbar'
 import { FatalError } from '../fatal-error/FatalError'
-
-export const [hovered, setHovered] = createSignal<RefLocationPair>()
-export const [showGroups, setShowGroups] = createSignal(false)
-export const [tab, setTab] = createSignal<Tab>('ast-tree')
+import { decode, encode } from '../../encode'
+import { showTooltip } from '../../tooltip'
 
 type Tab = 'parse-tree' | 'ast-tree'
 
-const defaultCode = `\
+export const defaultCode = `\
 use std::math
 
 kind Area {
@@ -56,21 +54,30 @@ fn main() {
     println(shapes)
 }`
 
+export const [hovered, setHovered] = createSignal<RefLocationPair>()
+export const [showGroups, setShowGroups] = createSignal(false)
+export const [tab, setTab] = createSignal<Tab>('ast-tree')
+const [code, setCode] = createSignal(defaultCode)
+
 export const Playground: Component = () => {
     const source = (): Source => ({ code: code(), filepath: 'playground.no' })
     const vid = { scope: [], name: 'test' }
 
-    const [code, setCode] = createSignal(defaultCode)
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
     const [fatalError, setFatalError] = createSignal<Error>()
 
+    const [searchParams, setSearchParams] = useSearchParams()
+
     let editorContainer: HTMLDivElement | undefined = undefined
     let ed: editor.IStandaloneCodeEditor | undefined
 
     onMount(() => {
-        ed = createEditor(editorContainer!, defaultCode)
+        const startCode = searchParams.code ? decode(searchParams.code) : defaultCode
+        setSearchParams({ code: undefined })
+        setCode(startCode)
+        ed = createEditor(editorContainer!, startCode)
         ed.getModel()?.onDidChangeContent(() => { setCode(ed!.getValue()) })
     })
 
@@ -202,20 +209,32 @@ export const Playground: Component = () => {
     )
 }
 
-const Header: Component = () => <div class={styles.header}>
-    <div>
-        <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
-    </div>
-    <div>
-        <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>
-            <option value={'parse-tree'}>{'Parse tree'}</option>
-            <option value={'ast-tree'}>{'AST tree'}</option>
-        </select>
-        <div class={styles.right}>
-            <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
+const Header: Component = () => {
+    let shareButton: HTMLAnchorElement | undefined
+
+    const copyLinkToClipboard = async () => {
+        const url = window.location.href + '?code=' + encode(code())
+        await navigator.clipboard.writeText(url)
+        showTooltip(shareButton!, 'copied!')
+    }
+    return <div class={styles.header}>
+        <div>
+            <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
+        </div>
+        <div>
+            <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>
+                <option value={'parse-tree'}>{'Parse tree'}</option>
+                <option value={'ast-tree'}>{'AST tree'}</option>
+            </select>
+            <div class={styles.right}>
+                <a ref={shareButton} title={'Copy playground link'} onClick={copyLinkToClipboard}>
+                    <i class="fa-solid fa-arrow-up-from-bracket"/>
+                </a>
+                <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
+            </div>
         </div>
     </div>
-</div>
+}
 
 interface RefLocationPair {
     ref: HTMLDivElement,

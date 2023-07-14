@@ -1,21 +1,15 @@
 import { Component } from 'solid-js'
 import styles from './FatalError.module.sass'
 import { Toolbar } from '../toolbar/Toolbar'
-import tippy from 'tippy.js'
 import 'tippy.js/dist/tippy.css'
+import { showTooltip } from '../../tooltip'
 
 type FatalErrorProps = { message: string }
 
 export const FatalError: Component<FatalErrorProps> = p => {
     const copyToClipboard = async () => {
         await navigator.clipboard.writeText(p.message)
-        tippy(copyButton!, {
-            content: 'copied!',
-            showOnCreate: true,
-            theme: 'nois',
-            onHidden: t => t.destroy(),
-            delay: [0, 200]
-        })
+        showTooltip(copyButton!, 'copied!')
     }
 
     let copyButton: HTMLButtonElement | undefined
