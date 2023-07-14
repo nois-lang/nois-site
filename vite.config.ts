@@ -12,5 +12,10 @@ export default defineConfig({
     },
     build: {
         target: 'esnext',
+        rollupOptions: {
+            output: {
+                manualChunks: { 'monaco-editor': ['monaco-editor'] }
+            }
+        }
     },
 })
