@@ -1,0 +1,183 @@
+.light {
+    --bg: #ffffff;
+    --fg: #000000;
+
+    --sidebar-bg: #eeeeee;
+    --sidebar-fg: hsl(0, 0%, 0%);
+    --sidebar-non-existant: #aaaaaa;
+    --sidebar-active: #1f1fff;
+    --sidebar-spacer: #f4f4f4;
+
+    --scrollbar: #8F8F8F;
+
+    --icons: #747474;
+    --icons-hover: #000000;
+
+    --links: #20609f;
+
+    --inline-code-color: #301900;
+
+    --theme-popup-bg: #fafafa;
+    --theme-popup-border: #cccccc;
+    --theme-hover: #e6e6e6;
+
+    --quote-bg: hsl(197, 37%, 96%);
+    --quote-border: hsl(197, 37%, 91%);
+
+    --table-border-color: hsl(0, 0%, 95%);
+    --table-header-bg: hsl(0, 0%, 80%);
+    --table-alternate-bg: hsl(0, 0%, 97%);
+
+    --searchbar-border-color: #aaa;
+    --searchbar-bg: #fafafa;
+    --searchbar-fg: #000;
+    --searchbar-shadow-color: #aaa;
+    --searchresults-header-fg: #666;
+    --searchresults-border-color: #888;
+    --searchresults-li-bg: #e4f2fe;
+    --search-mark-bg: #a2cff5;
+}
+
+@media (prefers-color-scheme: dark) {
+    .light {
+        --bg: #222222;
+        --fg: #ffffff;
+
+        --sidebar-bg: #333333;
+        --sidebar-fg: #ffffff;
+        --sidebar-non-existant: #505254;
+        --sidebar-active: var(--sidebar-fg);
+        --sidebar-spacer: #393939;
+
+        --scrollbar: var(--sidebar-fg);
+
+        --icons: #eeeeee;
+        --icons-hover: #c955e7;
+
+        --links: #2b79a2;
+
+        --inline-code-color: #c5c8c6;
+
+        --theme-popup-bg: #141617;
+        --theme-popup-border: #43484d;
+        --theme-hover: #1f2124;
+
+        --quote-bg: hsl(234, 21%, 18%);
+        --quote-border: hsl(234, 21%, 23%);
+
+        --table-border-color: hsl(200, 7%, 13%);
+        --table-header-bg: hsl(200, 7%, 28%);
+        --table-alternate-bg: hsl(200, 7%, 11%);
+
+        --searchbar-border-color: #aaa;
+        --searchbar-bg: #b7b7b7;
+        --searchbar-fg: #000;
+        --searchbar-shadow-color: #aaa;
+        --searchresults-header-fg: #666;
+        --searchresults-border-color: #98a3ad;
+        --searchresults-li-bg: #2b2b2f;
+        --search-mark-bg: #355c7d;
+    }
+
+    /* Tomorrow Night Theme */
+    /* https://github.com/jmblog/color-themes-for-highlightjs */
+    /* Original theme - https://github.com/chriskempson/tomorrow-theme */
+    /* https://github.com/jmblog/color-themes-for-highlightjs */
+    /* Tomorrow Comment */
+    .hljs-comment {
+        color: #969896;
+    }
+
+    /* Tomorrow Red */
+    .hljs-variable,
+    .hljs-attribute,
+    .hljs-tag,
+    .hljs-regexp,
+    .ruby .hljs-constant,
+    .xml .hljs-tag .hljs-title,
+    .xml .hljs-pi,
+    .xml .hljs-doctype,
+    .html .hljs-doctype,
+    .css .hljs-id,
+    .css .hljs-class,
+    .css .hljs-pseudo {
+        color: #cc6666;
+    }
+
+    /* Tomorrow Orange */
+    .hljs-number,
+    .hljs-preprocessor,
+    .hljs-pragma,
+    .hljs-built_in,
+    .hljs-literal,
+    .hljs-params,
+    .hljs-constant {
+        color: #de935f;
+    }
+
+    /* Tomorrow Yellow */
+    .ruby .hljs-class .hljs-title,
+    .css .hljs-rule .hljs-attribute {
+        color: #f0c674;
+    }
+
+    /* Tomorrow Green */
+    .hljs-string,
+    .hljs-value,
+    .hljs-inheritance,
+    .hljs-header,
+    .hljs-name,
+    .ruby .hljs-symbol,
+    .xml .hljs-cdata {
+        color: #b5bd68;
+    }
+
+    /* Tomorrow Aqua */
+    .hljs-title,
+    .css .hljs-hexcolor {
+        color: #8abeb7;
+    }
+
+    /* Tomorrow Blue */
+    .hljs-function,
+    .python .hljs-decorator,
+    .python .hljs-title,
+    .ruby .hljs-function .hljs-title,
+    .ruby .hljs-title .hljs-keyword,
+    .perl .hljs-sub,
+    .javascript .hljs-title,
+    .coffeescript .hljs-title {
+        color: #81a2be;
+    }
+
+    /* Tomorrow Purple */
+    .hljs-keyword,
+    .javascript .hljs-function {
+        color: #b294bb;
+    }
+
+    .hljs {
+        display: block;
+        overflow-x: auto;
+        background: #1d1f21;
+        color: #c5c8c6;
+    }
+
+    .coffeescript .javascript,
+    .javascript .xml,
+    .tex .hljs-formula,
+    .xml .javascript,
+    .xml .vbscript,
+    .xml .css,
+    .xml .hljs-cdata {
+        opacity: 0.5;
+    }
+
+    .hljs-addition {
+        color: #718c00;
+    }
+
+    .hljs-deletion {
+        color: #c82829;
+    }
+}

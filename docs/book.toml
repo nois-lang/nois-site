@@ -1,0 +1,31 @@
+[book]
+authors = ["ivanjermakov"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Nois documentation"
+description = "Nois language documentation"
+
+[build]
+build-dir = "../dist/docs"
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "light"
+curly-quotes = true
+mathjax-support = false
+copy-fonts = true
+no-section-label = false
+git-repository-url = "https://github.com/nois-lang/nois"
+git-repository-icon = "fa-github"
+additional-css = ["src/theme.css"]
+
+[output.html.print]
+enable = true
+
+[output.html.playground]
+editable = true
+copyable = true
+copy-js = true
+line-numbers = false
+runnable = false

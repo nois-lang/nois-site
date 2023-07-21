@@ -9,6 +9,7 @@ export const Home: Component = () => {
             <div class={styles.content}>
                 <div class={styles.header}>
                     <A href={'/'}>Home</A>
+                    <a href={'/docs'}>Docs</a>
                     <A href={'/play'}>Playground</A>
                     <div class={styles.right}>
                         <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"/></A>

@@ -5,8 +5,9 @@
   "scripts": {
     "start": "vite",
     "dev": "vite",
-    "build": "vite build",
-    "serve": "vite preview"
+    "build": "vite build && npm run build:docs",
+    "serve": "vite preview",
+    "build:docs": "mdbook build docs"
   },
   "license": "MIT",
   "devDependencies": {
