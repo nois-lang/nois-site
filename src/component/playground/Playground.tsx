@@ -25,8 +25,6 @@ import { showTooltip } from '../../tooltip'
 type Tab = 'parse-tree' | 'ast-tree'
 
 export const defaultCode = `\
-use std::math
-
 trait Area {
     fn area(self): Num
 }
@@ -39,18 +37,18 @@ type Shape {
 impl Area for Shape {
     fn area(self): Num {
         match self {
-            Rect(width, height) -> width * height,
-            Circle(radius) -> math::pi * radius ^ 2
+            Shape::Rect(width, height) { width * height },
+            Shape::Circle(radius) { math::pi * radius ^ 2 }
         }
     }
 }
 
 fn main() {
     let shapes: List<Shape> = [
-        Rect(width: 4, height: 2),
-        Circle(radius: 12.34),
+        Shape::Rect(width: 4, height: 2),
+        Shape::Circle(radius: 12.34),
     ]
-    println(shapes)
+    println(shapes.iter().map(Area::area).into<List>())
 }`
 
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
