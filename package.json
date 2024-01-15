@@ -5,7 +5,7 @@
     "scripts": {
         "start": "vite",
         "dev": "vite",
-        "build": "vite build && npm run build:docs",
+        "build": "tsc && vite build && npm run build:docs",
         "serve": "vite preview",
         "build:docs": "mdbook build docs"
     },
