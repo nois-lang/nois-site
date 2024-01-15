@@ -58,7 +58,7 @@ const [code, setCode] = createSignal(defaultCode)
 
 export const Playground: Component = () => {
     const source = (): Source => ({ code: code(), filepath: 'playground.no' })
-    const vid = { scope: [], name: 'test' }
+    const vid = { names: ['test'] }
 
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
@@ -161,11 +161,11 @@ export const Playground: Component = () => {
     const allErrors = () => [
         ...(errorTokens()?.map(t => ({
             message: prettyLexerError(t),
-            location: t.location.start
+            location: t.location
         })) || []),
         ...(syntaxErrors()?.map(e => ({
             message: prettySyntaxError(e),
-            location: e.got.location.start
+            location: e.got.location
         })) || [])
     ]
 
@@ -205,7 +205,7 @@ export const Playground: Component = () => {
                                         {({ message, location }) => (
                                             <LangError
                                                 message={message}
-                                                location={indexToLocation(location, source())!}
+                                                location={location}
                                                 source={source()}
                                             />
                                         )}
