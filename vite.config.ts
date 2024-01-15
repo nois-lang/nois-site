@@ -10,7 +10,7 @@ export default defineConfig({
             languageWorkers: ['editorWorkerService']
         }),
         viteStaticCopy({
-            targets: [{ src: 'node_modules/nois/dist/std', dest: 'public' }]
+            targets: [{ src: 'node_modules/nois/dist/std', dest: '.' }]
         })
     ],
     server: {
