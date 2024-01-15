@@ -21,18 +21,19 @@
     },
     "homepage": "https://github.com/nois-lang/nois-site#readme",
     "devDependencies": {
-        "solid-devtools": "~0.27.3",
-        "typescript": "~5.1.3",
-        "vite": "~4.3.9",
-        "vite-plugin-solid": "~2.7.0",
-        "vite-plugin-monaco-editor": "~1.1.0"
+        "solid-devtools": "~0.29.2",
+        "typescript": "~5.3.3",
+        "vite": "~5.0.11",
+        "vite-plugin-monaco-editor": "~1.1.0",
+        "vite-plugin-solid": "~2.8.0",
+        "vite-plugin-static-copy": "^1.0.0"
     },
     "dependencies": {
+        "@solidjs/router": "~0.10.9",
+        "monaco-editor": "~0.45.0",
         "nois": "github:nois-lang/nois",
-        "sass": "~1.63.6",
-        "solid-js": "~1.7.6",
-        "@solidjs/router": "~0.8.2",
-        "monaco-editor": "~0.39.0",
+        "sass": "~1.69.7",
+        "solid-js": "~1.8.11",
         "tippy.js": "~6.3.7"
     }
 }
