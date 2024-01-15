@@ -48,16 +48,6 @@
         min-width: 0;
         height: 100%;
         border-right: 2px solid var(--bg3);
-
-        & * {
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .region {
-            background-color: var(--region);
-        }
-        .unknownToken {
-            color: var(--unknownToken);
-        }
     }
     .container {
         position: relative;
