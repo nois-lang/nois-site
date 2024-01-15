@@ -1,9 +1,16 @@
+[build.environment]
+NPM_FLAGS = "--version"
+
+[build]
+command = "rustup default stable && cargo install mdbook && npm install -g typescript && pnpm install && pnpm run build"
+publish = "dist"
+
 [[redirects]]
 from = "/*"
 to = "/index.html"
 status = 200
 
 [[headers]]
-  for = "/std/*"
-  [headers.values]
-    Content-Type = "text/plain"
+for = "/std/*"
+[headers.values]
+Content-Type = "text/plain"
