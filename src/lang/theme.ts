@@ -5,7 +5,7 @@ export const lightRuleThemes: editor.ITokenThemeRule[] = [
     { token: 'string', foreground: '#3a6e1f' },
     { token: 'char', foreground: '#3a6e1f' },
     { token: 'number', foreground: '#a65437' },
-    { token: 'comment', foreground: '#444444' },
+    { token: 'comment', foreground: '#444444' }
 ]
 
 export const darkRuleThemes: editor.ITokenThemeRule[] = [
@@ -13,7 +13,7 @@ export const darkRuleThemes: editor.ITokenThemeRule[] = [
     { token: 'string', foreground: '#a6d189' },
     { token: 'char', foreground: '#a6d189' },
     { token: 'number', foreground: '#ffb499' },
-    { token: 'comment', foreground: '#cccccc' },
+    { token: 'comment', foreground: '#cccccc' }
 ]
 
 export const noisLightTheme: editor.IStandaloneThemeData = {
@@ -22,7 +22,7 @@ export const noisLightTheme: editor.IStandaloneThemeData = {
     rules: lightRuleThemes,
     colors: {
         'editor.background': '#ffffff',
-        'editor.foreground': '#000000',
+        'editor.foreground': '#000000'
     }
 }
 
@@ -32,6 +32,6 @@ export const noisDarkTheme: editor.IStandaloneThemeData = {
     rules: darkRuleThemes,
     colors: {
         'editor.background': '#222222',
-        'editor.foreground': '#ffffff',
-    },
+        'editor.foreground': '#ffffff'
+    }
 }

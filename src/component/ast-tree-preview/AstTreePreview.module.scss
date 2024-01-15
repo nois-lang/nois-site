@@ -1,0 +1,29 @@
+.node {
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    border-radius: 4px;
+
+    &.hover {
+        background-color: var(--bg3);
+    }
+    .kind {
+        padding: 0 0 1px 4px;
+
+        &.group {
+            color: var(--fg3);
+            font-weight: 300;
+        }
+    }
+    .children {
+        display: flex;
+        flex-direction: column;
+
+        .node {
+            margin-left: 2ch;
+        }
+    }
+    .value {
+        margin-left: 1ch;
+    }
+}

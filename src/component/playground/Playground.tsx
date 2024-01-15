@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, Match, onMount, Switch } from 'solid-js'
-import styles from './Playground.module.sass'
+import styles from './Playground.module.scss'
 import { erroneousTokenKinds, ParseToken, tokenize } from 'nois/dist/lexer/lexer'
 import { prettyLexerError, prettySyntaxError, SyntaxError } from 'nois/dist/error'
 import { indexToLocation, LocationRange } from 'nois/dist/location'
@@ -75,22 +75,28 @@ export const Playground: Component = () => {
         setSearchParams({ code: undefined })
         setCode(startCode)
         ed = createEditor(editorContainer!, startCode)
-        ed.getModel()?.onDidChangeContent(() => { setCode(ed!.getValue()) })
+        ed.getModel()?.onDidChangeContent(() => {
+            setCode(ed!.getValue())
+        })
     })
 
     const updateParseTreeHighlight = () => {
         ed!.removeDecorations(
-            ed!.getModel()!.getAllDecorations()
+            ed!
+                .getModel()!
+                .getAllDecorations()
                 .filter(d => d.options.inlineClassName === styles.region)
                 .map(d => d.id)
         )
 
         if (!hovered()) return
 
-        ed!.createDecorationsCollection([{
-            range: locationRangeToRange(hovered()!.location, source()),
-            options: { inlineClassName: styles.region },
-        }])
+        ed!.createDecorationsCollection([
+            {
+                range: locationRangeToRange(hovered()!.location, source()),
+                options: { inlineClassName: styles.region }
+            }
+        ])
     }
     createEffect(updateParseTreeHighlight)
 
@@ -113,15 +119,19 @@ export const Playground: Component = () => {
             }
 
             ed!.removeDecorations(
-                ed!.getModel()!.getAllDecorations()
+                ed!
+                    .getModel()!
+                    .getAllDecorations()
                     .filter(d => d.options.inlineClassName === styles.unknownToken)
                     .map(d => d.id)
             )
             errorTs.forEach(t => {
-                ed!.createDecorationsCollection([{
-                    range: locationRangeToRange(t.location, source()),
-                    options: { inlineClassName: styles.unknownToken },
-                }])
+                ed!.createDecorationsCollection([
+                    {
+                        range: locationRangeToRange(t.location, source()),
+                        options: { inlineClassName: styles.unknownToken }
+                    }
+                ])
             })
 
             const errorMarkers: editor.IMarkerData[] = parser.errors.map(e => {
@@ -149,56 +159,60 @@ export const Playground: Component = () => {
     createEffect(updateCode)
 
     const allErrors = () => [
-        ...(
-            errorTokens()?.map(t => ({
-                message: prettyLexerError(t),
-                location: t.location.start
-            }))
-            || []),
-        ...(
-            syntaxErrors()?.map(e => ({
-                message: prettySyntaxError(e),
-                location: e.got.location.start
-            }))
-            || [])
+        ...(errorTokens()?.map(t => ({
+            message: prettyLexerError(t),
+            location: t.location.start
+        })) || []),
+        ...(syntaxErrors()?.map(e => ({
+            message: prettySyntaxError(e),
+            location: e.got.location.start
+        })) || [])
     ]
 
     return (
         <div class={styles.Playground}>
-            <Header/>
-            <div ref={editorContainer} class={styles.editorContainer}/>
+            <Header />
+            <div ref={editorContainer} class={styles.editorContainer} />
             <div class={styles.container}>
                 <div class={styles.rightPanel}>
                     <Switch>
                         <Match when={module()}>
                             <Switch>
                                 <Match when={tab() === 'parse-tree'}>
-                                    <ParseTreePreview node={module()!.parseNode}/>
+                                    <ParseTreePreview node={module()!.parseNode} />
                                 </Match>
                                 <Match when={tab() === 'ast-tree'}>
                                     <Toolbar>
-                                        <button type={'button'}
-                                                title={'Toggle AST groups'}
-                                                onClick={() => setShowGroups(!showGroups())}
+                                        <button
+                                            type={'button'}
+                                            title={'Toggle AST groups'}
+                                            onClick={() => setShowGroups(!showGroups())}
                                         >
-                                            <i class="fa-solid fa-layer-group"/>
+                                            <i class="fa-solid fa-layer-group" />
                                         </button>
                                     </Toolbar>
-                                    <AstTreePreview node={destructureAstNode(module()!)}/>
+                                    <AstTreePreview node={destructureAstNode(module()!)} />
                                 </Match>
                             </Switch>
                         </Match>
                         <Match when={fatalError()}>
-                            <FatalError message={formatError(fatalError()!, code())}/>
+                            <FatalError message={formatError(fatalError()!, code())} />
                         </Match>
-                        <Match when={true}>{
-                            <div class={styles.errors}>
-                                <For each={allErrors()}>{({ message, location }) =>
-                                    <LangError message={message} location={indexToLocation(location, source())!}
-                                               source={source()}/>
-                                }</For>
-                            </div>
-                        }</Match>
+                        <Match when={true}>
+                            {
+                                <div class={styles.errors}>
+                                    <For each={allErrors()}>
+                                        {({ message, location }) => (
+                                            <LangError
+                                                message={message}
+                                                location={indexToLocation(location, source())!}
+                                                source={source()}
+                                            />
+                                        )}
+                                    </For>
+                                </div>
+                            }
+                        </Match>
                     </Switch>
                 </div>
             </div>
@@ -214,32 +228,37 @@ const Header: Component = () => {
         await navigator.clipboard.writeText(url)
         showTooltip(shareButton!, 'copied!')
     }
-    return <div class={styles.header}>
-        <div>
-            <A href={'/'} class={styles.logo}><img src={logo} alt={'Nois logo'}/></A>
-        </div>
-        <div>
-            <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>
-                <option value={'parse-tree'}>{'Parse tree'}</option>
-                <option value={'ast-tree'}>{'AST tree'}</option>
-            </select>
-            <div class={styles.right}>
-                <a ref={shareButton} title={'Copy playground link'} onClick={copyLinkToClipboard}>
-                    <i class="fa-solid fa-arrow-up-from-bracket"/>
-                </a>
-                <A href={'https://github.com/nois-lang'}><i class="fa-brands fa-github"></i></A>
+    return (
+        <div class={styles.header}>
+            <div>
+                <A href={'/'} class={styles.logo}>
+                    <img src={logo} alt={'Nois logo'} />
+                </A>
+            </div>
+            <div>
+                <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>
+                    <option value={'parse-tree'}>{'Parse tree'}</option>
+                    <option value={'ast-tree'}>{'AST tree'}</option>
+                </select>
+                <div class={styles.right}>
+                    <a ref={shareButton} title={'Copy playground link'} onClick={copyLinkToClipboard}>
+                        <i class="fa-solid fa-arrow-up-from-bracket" />
+                    </a>
+                    <A href={'https://github.com/nois-lang'}>
+                        <i class="fa-brands fa-github"></i>
+                    </A>
+                </div>
             </div>
         </div>
-    </div>
+    )
 }
 
 interface RefLocationPair {
-    ref: HTMLDivElement,
+    ref: HTMLDivElement
     location: LocationRange
 }
 
 const createEditor = (container: HTMLDivElement, value: string): editor.IStandaloneCodeEditor => {
-
     editor.defineTheme('nois-light', noisLightTheme)
     editor.defineTheme('nois-dark', noisDarkTheme)
 
@@ -261,7 +280,7 @@ const createEditor = (container: HTMLDivElement, value: string): editor.IStandal
         padding: { top: 16, bottom: 16 },
         scrollbar: { alwaysConsumeMouseWheel: false },
         // @ts-ignore
-        'bracketPairColorization.enabled': false,
+        'bracketPairColorization.enabled': false
     })
 
     const setTheme = (dark: boolean) => editor.setTheme(dark ? 'nois-dark' : 'nois-light')

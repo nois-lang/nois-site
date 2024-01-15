@@ -20,7 +20,7 @@ export const noisLanguageConfiguration: languages.LanguageConfiguration = {
         { open: '[', close: ']' },
         { open: '(', close: ')' },
         { open: '"', close: '"' },
-        { open: '\'', close: '\'' }
+        { open: "'", close: "'" }
     ]
 }
 
@@ -72,7 +72,7 @@ export const noisMonarchLanguage: languages.IMonarchLanguage = {
                     }
                 }
             ],
-            [/[{}()\[\]<>]/, '@brackets'],
+            [/[{}()\[\]<>]/, '@brackets']
         ],
         whitespace: [
             [/[ \t\r\n]+/, 'white'],

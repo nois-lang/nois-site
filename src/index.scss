@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Cantarell:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@200;400&display=swap');
+
+:root {
+    --bg: #ffffff;
+    --bg2: #eeeeee;
+    --bg3: #dddddd;
+    --fg: #000000;
+    --fg2: #111111;
+    --fg3: #444444;
+    --region: hsla(87, 100%, 42%, 0.4);
+    --unknownToken: #730623;
+    --special: #c955e7;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #222222;
+        --bg2: #333333;
+        --bg3: #555555;
+        --fg: #ffffff;
+        --fg2: #eeeeee;
+        --fg3: #aaaaaa;
+        --unknownToken: #ff5d40;
+    }
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--fg);
+}
+html {
+    font-size: 16px;
+}
+html,
+body,
+#root {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+* {
+    box-sizing: border-box;
+    font-family: 'Cantarell', sans-serif;
+    font-variant-ligatures: none;
+}
+pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    margin: 0;
+    overflow-y: auto;
+}
+code {
+    font-family: 'JetBrains Mono', monospace;
+    background-color: var(--bg2);
+    border-radius: 4px;
+    padding: 0 4px;
+}
+p {
+    margin: 0;
+}
+a {
+    color: var(--fg);
+
+    &:hover {
+        color: var(--special);
+
+        i {
+            color: var(--special);
+        }
+    }
+}
+i {
+    color: var(--fg);
+}
+button {
+    background-color: var(--bg2);
+    color: var(--fg);
+    outline: none;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--bg3);
+    border-radius: 2px;
+}
+select {
+    background: var(--bg2);
+    color: var(--fg);
+    outline: none;
+    border: 1px solid var(--bg3);
+    padding: 0.2rem 0.5rem;
+    font-size: 1rem;
+    border-radius: 2px;
+}
+.tippy-box[data-theme~='nois'] {
+    background-color: var(--special);
+    color: var(--bg);
+
+    .tippy-arrow::before {
+        border-top-color: var(--special) !important;
+        border-bottom-color: var(--special) !important;
+    }
+}
