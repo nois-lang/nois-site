@@ -156,6 +156,24 @@ select {
         border-right: 1px solid var(--bg3);
     }
 
+    .cm-panels {
+        background-color: var(--bg2);
+        color: var(--fg);
+    }
+
+    .cm-panel.cm-panel-lint ul [aria-selected] {
+        background-color: unset;
+    }
+
+    .cm-panels-bottom {
+        border-top: 1px solid var(--bg3)
+    }
+
+    .cm-tooltip {
+        background-color: var(--bg2);
+        border-right: 1px solid var(--bg3);
+    }
+
     .cm-activeLineGutter {
         background-color: var(--bg3);
     }
@@ -166,5 +184,10 @@ select {
 
     .cm-indent-markers::before {
         z-index: 100 !important;
+    }
+
+    .cm-lintRange-error {
+        background-image: none;
+        text-decoration: red wavy underline;
     }
 }

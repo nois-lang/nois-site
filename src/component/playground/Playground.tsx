@@ -2,7 +2,7 @@ import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } 
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { rust } from '@codemirror/lang-rust'
 import { HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
-import { lintKeymap } from '@codemirror/lint'
+import { Diagnostic, lintKeymap, linter } from '@codemirror/lint'
 import { StateEffect, StateField } from '@codemirror/state'
 import {
     Decoration,
@@ -69,6 +69,8 @@ export const [hovered, setHovered] = createSignal<RefLocationPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
 export const [tab, setTab] = createSignal<Tab>('ast-tree')
 const [code, setCode] = createSignal(defaultCode)
+const [lexerDiagnostics, setLexerDiagnostics] = createSignal<Diagnostic[]>([])
+const [parserDiagnostics, setParserDiagnostics] = createSignal<Diagnostic[]>([])
 
 export const Playground: Component = () => {
     const source = (): Source => ({ code: code(), filepath: 'playground.no' })
@@ -121,7 +123,27 @@ export const Playground: Component = () => {
                 setModule(undefined)
             }
 
-            // TODO: error marks
+            setLexerDiagnostics(
+                errorTs.map(t => {
+                    return {
+                        from: t.location.start,
+                        to: t.location.end + 1,
+                        severity: 'error',
+                        message: prettyLexerError(t)
+                    } as Diagnostic
+                })
+            )
+
+            setParserDiagnostics(
+                parser.errors.map(e => {
+                    return {
+                        from: e.got.location.start,
+                        to: e.got.location.end + 1,
+                        severity: 'error',
+                        message: prettySyntaxError(e)
+                    } as Diagnostic
+                })
+            )
 
             setFatalError(undefined)
         } catch (e) {
@@ -268,6 +290,7 @@ const createEditor = (container: HTMLDivElement, value: string): EditorView => {
                     activeDark: 'var(--bg2)'
                 }
             }),
+            linter(() => [...lexerDiagnostics(), ...parserDiagnostics()], { delay: 0 }),
             highlightExtension
         ],
         parent: container,
