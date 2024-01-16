@@ -1,9 +1,21 @@
+import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { rust } from '@codemirror/lang-rust'
-import { HighlightStyle, indentUnit, syntaxHighlighting } from '@codemirror/language'
+import { HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
+import { lintKeymap } from '@codemirror/lint'
+import { StateEffect, StateField } from '@codemirror/state'
+import {
+    Decoration,
+    drawSelection,
+    highlightActiveLine,
+    highlightActiveLineGutter,
+    keymap,
+    lineNumbers
+} from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { A, useSearchParams } from '@solidjs/router'
-import { EditorView, basicSetup } from 'codemirror'
+import { EditorView } from 'codemirror'
 import { Module, buildModuleAst } from 'nois/dist/ast'
 import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/dist/error'
 import { ParseToken, erroneousTokenKinds, tokenize } from 'nois/dist/lexer/lexer'
@@ -23,7 +35,6 @@ import { LangError } from '../lang-error/LangError'
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 import { Toolbar } from '../toolbar/Toolbar'
 import styles from './Playground.module.scss'
-import { EditorState } from '@codemirror/state'
 
 type Tab = 'parse-tree' | 'ast-tree'
 
@@ -78,28 +89,17 @@ export const Playground: Component = () => {
         setSearchParams({ code: undefined })
         setCode(startCode)
         ed = createEditor(editorContainer!, startCode)
-        // ed.getModel()?.onDidChangeContent(() => {
-        //     setCode(ed!.getValue())
-        // })
     })
 
     const updateParseTreeHighlight = () => {
-        // ed!.removeDecorations(
-        //     ed!
-        //         .getModel()!
-        //         .getAllDecorations()
-        //         .filter(d => d.options.inlineClassName === styles.region)
-        //         .map(d => d.id)
-        // )
+        if (!ed) return
 
-        if (!hovered()) return
+        ed.dispatch({ effects: rmHighlightEffect.of() })
 
-        // ed!.createDecorationsCollection([
-        //     {
-        //         range: locationRangeToRange(hovered()!.location, source()),
-        //         options: { inlineClassName: styles.region }
-        //     }
-        // ])
+        const location = hovered()?.location
+        if (!location) return
+
+        ed.dispatch({ effects: highlightEffect.of([highlightDecoration.range(location.start, location.end + 1)]) })
     }
     createEffect(updateParseTreeHighlight)
 
@@ -121,34 +121,7 @@ export const Playground: Component = () => {
                 setModule(undefined)
             }
 
-            // ed!.removeDecorations(
-            //     ed!
-            //         .getModel()!
-            //         .getAllDecorations()
-            //         .filter(d => d.options.inlineClassName === styles.unknownToken)
-            //         .map(d => d.id)
-            // )
-            // errorTs.forEach(t => {
-            //     ed!.createDecorationsCollection([
-            //         {
-            //             range: locationRangeToRange(t.location, source()),
-            //             options: { inlineClassName: styles.unknownToken }
-            //         }
-            //     ])
-            // })
-
-            // const errorMarkers: editor.IMarkerData[] = parser.errors.map(e => {
-            //     const range = locationRangeToRange(e.got.location, source())
-            //     return {
-            //         startLineNumber: range.startLineNumber,
-            //         startColumn: range.startColumn,
-            //         endLineNumber: range.endLineNumber,
-            //         endColumn: range.endColumn,
-            //         message: prettySyntaxError(e),
-            //         severity: MarkerSeverity.Error
-            //     }
-            // })
-            // editor.setModelMarkers(ed!.getModel()!, 'nois', errorMarkers)
+            // TODO: error marks
 
             setFatalError(undefined)
         } catch (e) {
@@ -267,12 +240,21 @@ const createEditor = (container: HTMLDivElement, value: string): EditorView => {
     ])
     const ed = new EditorView({
         extensions: [
-            basicSetup,
+            lineNumbers(),
+            highlightActiveLineGutter(),
+            history(),
+            drawSelection(),
+            indentOnInput(),
+            bracketMatching(),
+            closeBrackets(),
+            autocompletion(),
+            highlightActiveLine(),
+            keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...completionKeymap, ...lintKeymap]),
             syntaxHighlighting(style),
             rust(),
             EditorView.updateListener.of(e => {
                 if (e.docChanged) {
-                    console.log(e.state.doc.toString())
+                    setCode(e.state.doc.toString())
                 }
             }),
             indentUnit.of(' '.repeat(4)),
@@ -280,12 +262,13 @@ const createEditor = (container: HTMLDivElement, value: string): EditorView => {
                 hideFirstIndent: true,
                 highlightActiveBlock: false,
                 colors: {
-                    light: 'var(--bg3)',
-                    activeLight: 'var(--bg3)',
-                    dark: 'var(--bg3)',
-                    activeDark: 'var(--bg3)'
+                    light: 'var(--bg2)',
+                    activeLight: 'var(--bg2)',
+                    dark: 'var(--bg2)',
+                    activeDark: 'var(--bg2)'
                 }
-            })
+            }),
+            highlightExtension
         ],
         parent: container,
         doc: value
@@ -293,14 +276,35 @@ const createEditor = (container: HTMLDivElement, value: string): EditorView => {
     return ed
 }
 
-// const locationRangeToRange = (locationRange: LocationRange, source: Source): Range => {
-//     const start = indexToLocation(locationRange.start, source)!
-//     const end = indexToLocation(locationRange.end, source)!
-//     // + 1 because location is 0 indexed, + 2 because location.end is inclusive
-//     return new Range(start.line + 1, start.column + 1, end.line + 1, end.column + 2)
-// }
-//
 const formatError = (error: Error, code: string): string => {
     const errorMsg = error.stack ?? `${error.name}: ${error.message}`
     return `Code: ${JSON.stringify(code)}\n${errorMsg}`
 }
+
+const highlightEffect = StateEffect.define<any>()
+const rmHighlightEffect = StateEffect.define<void>()
+
+const highlightExtension = StateField.define({
+    create() {
+        return Decoration.none
+    },
+    update(value, transaction) {
+        value = value.map(transaction.changes)
+
+        for (let effect of transaction.effects) {
+            if (effect.is(highlightEffect)) {
+                value = value.update({ add: effect.value })
+            }
+            if (effect.is(rmHighlightEffect)) {
+                value = Decoration.none
+            }
+        }
+
+        return value
+    },
+    provide: f => EditorView.decorations.from(f)
+})
+
+const highlightDecoration = Decoration.mark({
+    class: 'highlight'
+})

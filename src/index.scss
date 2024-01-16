@@ -15,6 +15,8 @@
     --hl-keyword: #5c2e81;
     --hl-number: #a65437;
     --hl-string: #3a6e1f;
+    --indent-markers: repeating-linear-gradient(to right, var(--indent-marker-bg-color) 0 1px, transparent 1px 4ch)
+        4.5ch / calc(8ch - 1px) no-repeat !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -119,11 +121,25 @@ select {
     }
 }
 
+.highlight {
+    display: inline-block;
+    background-color: var(--bg3);
+}
+
 .cm-editor {
     width: 100%;
 
     & * {
         font-family: 'JetBrains Mono', monospace;
+    }
+
+    .cm-content {
+        padding: 4px;
+    }
+
+    .cm-line {
+        // display: flex;
+        padding: 0;
     }
 
     .cm-cursor {
@@ -136,6 +152,7 @@ select {
 
     .cm-gutters {
         background-color: var(--bg2);
+        color: var(--fg3);
         border-right: 1px solid var(--bg3);
     }
 
@@ -145,10 +162,6 @@ select {
 
     .cm-selectionBackground {
         background: var(--bg3) !important;
-    }
-
-    .cm-content {
-        padding: 0 4px;
     }
 
     .cm-indent-markers::before {
