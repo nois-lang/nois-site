@@ -1,5 +1,8 @@
+[build.environment]    
+NPM_FLAGS = "--version"
+
 [build]
-command = "rustup default stable && cargo install mdbook && npm install && npm run build"
+command = "./build.sh"
 publish = "dist"
 
 [[redirects]]
@@ -9,5 +12,6 @@ status = 200
 
 [[headers]]
 for = "/std/*"
+
 [headers.values]
 Content-Type = "text/plain"
