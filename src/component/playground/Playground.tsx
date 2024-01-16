@@ -3,7 +3,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { rust } from '@codemirror/lang-rust'
 import { HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
 import { Diagnostic, lintKeymap, linter } from '@codemirror/lint'
-import { StateEffect, StateField } from '@codemirror/state'
+import { Compartment, StateEffect, StateField } from '@codemirror/state'
 import {
     Decoration,
     drawSelection,
@@ -17,18 +17,25 @@ import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
 import { Module, buildModuleAst } from 'nois/ast'
+import { defaultConfig } from 'nois/config'
 import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/error'
 import { ParseToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
 import { LocationRange } from 'nois/location'
-import { stdModuleVids } from 'nois/std-index'
 import { useColoredOutput } from 'nois/output'
+import { Package } from 'nois/package'
+import { getLocationRange } from 'nois/parser'
 import { parseModule } from 'nois/parser/fns'
 import { Parser } from 'nois/parser/parser'
+import { Context } from 'nois/scope'
+import { buildInstanceRelations } from 'nois/scope/trait'
+import { checkModule, prepareModule } from 'nois/semantic'
 import { Source } from 'nois/source'
+import { stdModuleVids } from 'nois/std-index'
 import type { Component } from 'solid-js'
 import { For, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
 import logo from '../../assets/logo_full.svg'
 import { decode, encode } from '../../encode'
+import { buildPackageFromVids } from '../../package'
 import { showTooltip } from '../../tooltip'
 import { AstTreePreview, destructureAstNode } from '../ast-tree-preview/AstTreePreview'
 import { FatalError } from '../fatal-error/FatalError'
@@ -36,11 +43,6 @@ import { LangError } from '../lang-error/LangError'
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 import { Toolbar } from '../toolbar/Toolbar'
 import styles from './Playground.module.scss'
-import { buildPackageFromVids } from '../../package'
-import { Context } from 'nois/scope'
-import { defaultConfig } from 'nois/config'
-import { checkModule, prepareModule } from 'nois/semantic'
-import { buildInstanceRelations } from 'nois/scope/trait'
 
 type Tab = 'parse-tree' | 'ast-tree'
 
@@ -75,13 +77,15 @@ export const [hovered, setHovered] = createSignal<RefLocationPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
 export const [tab, setTab] = createSignal<Tab>('ast-tree')
 const [code, setCode] = createSignal(defaultCode)
-const [lexerDiagnostics, setLexerDiagnostics] = createSignal<Diagnostic[]>([])
-const [parserDiagnostics, setParserDiagnostics] = createSignal<Diagnostic[]>([])
+const [diagnostics, setDiagnostics] = createSignal<Diagnostic[]>([])
+const [std, setStd] = createSignal<Package>()
+
+const linterCompartment = new Compartment()
+const makeLinter = linter(diagnostics, { delay: 0 })
 
 export const Playground: Component = () => {
     const source = (): Source => ({ code: code(), filepath: 'playground.no' })
-    const vid = { names: ['test'] }
-    let ctx: Context | undefined
+    const vid = { names: ['playground'] }
 
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
@@ -98,24 +102,11 @@ export const Playground: Component = () => {
         setSearchParams({ code: undefined })
         setCode(startCode)
         ed = createEditor(editorContainer!, startCode)
-        buildPackageFromVids('std', stdModuleVids).then(std => {
-            ctx = {
-                config: defaultConfig(),
-                moduleStack: [],
-                packages: [std],
-                impls: [],
-                errors: [],
-                warnings: [],
-                check: false
-            }
-            ctx.packages.forEach(p => {
-                p.modules.forEach(m => {
-                    prepareModule(m)
-                })
-            })
-            ctx.impls = buildInstanceRelations(ctx)
-            ctx.check = true
-            ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx!))
+        ed.focus()
+        buildPackageFromVids('std', stdModuleVids).then(pkg => {
+            setStd(pkg)
+            // force diagnostics to appear once std is set
+            ed?.dispatch({ effects: linterCompartment.reconfigure(makeLinter) })
         })
     })
 
@@ -142,39 +133,67 @@ export const Playground: Component = () => {
             const parseTree = parser.buildTree()
             setSyntaxErrors(parser.errors.length !== 0 ? parser.errors : undefined)
 
+            const ds: Diagnostic[] = []
             if (errorTs.length === 0 && parser.errors.length === 0) {
-                setModule(buildModuleAst(parseTree, vid, source()))
+                const mod = buildModuleAst(parseTree, vid, source())
+                setModule(mod)
+                const stdPkg = std()
+                if (stdPkg) {
+                    const ctx = check(stdPkg, mod)
+                    ds.push(
+                        ...ctx.errors
+                            .filter(e => e.module === mod)
+                            .map(e => {
+                                const range = getLocationRange(e.node.parseNode)
+                                return {
+                                    from: range.start,
+                                    to: range.end + 1,
+                                    severity: 'error' as const,
+                                    message: e.message
+                                }
+                            })
+                    )
+                    ds.push(
+                        ...ctx.warnings
+                            .filter(e => e.module === mod)
+                            .map(e => {
+                                const range = getLocationRange(e.node.parseNode)
+                                return {
+                                    from: range.start,
+                                    to: range.end + 1,
+                                    severity: 'warning' as const,
+                                    message: e.message
+                                }
+                            })
+                    )
+                }
             } else {
                 setModule(undefined)
-            }
 
-            setLexerDiagnostics(
-                errorTs.map(t => {
-                    return {
+                ds.push(
+                    ...errorTs.map(t => ({
                         from: t.location.start,
                         to: t.location.end + 1,
-                        severity: 'error',
+                        severity: 'error' as const,
                         message: prettyLexerError(t)
-                    } as Diagnostic
-                })
-            )
-
-            setParserDiagnostics(
-                parser.errors.map(e => {
-                    return {
+                    }))
+                )
+                ds.push(
+                    ...parser.errors.map(e => ({
                         from: e.got.location.start,
                         to: e.got.location.end + 1,
-                        severity: 'error',
+                        severity: 'error' as const,
                         message: prettySyntaxError(e)
-                    } as Diagnostic
-                })
-            )
+                    }))
+                )
+            }
 
+            setDiagnostics(ds)
             setFatalError(undefined)
         } catch (e) {
             if (e instanceof Error) {
                 setFatalError(e)
-                console.warn(formatError(e, code()))
+                console.warn(e)
             }
             setModule(undefined)
         }
@@ -300,9 +319,7 @@ const createEditor = (container: HTMLDivElement, value: string): EditorView => {
             syntaxHighlighting(style),
             rust(),
             EditorView.updateListener.of(e => {
-                if (e.docChanged) {
-                    setCode(e.state.doc.toString())
-                }
+                setCode(e.state.doc.toString())
             }),
             indentUnit.of(' '.repeat(4)),
             indentationMarkers({
@@ -310,7 +327,7 @@ const createEditor = (container: HTMLDivElement, value: string): EditorView => {
                 highlightActiveBlock: false,
                 colors: { light: 'var(--bg2)', activeLight: 'var(--bg2)', dark: 'var(--bg2)', activeDark: 'var(--bg2)' }
             }),
-            linter(() => [...lexerDiagnostics(), ...parserDiagnostics()], { delay: 0 }),
+            linterCompartment.of(linter(diagnostics, { delay: 100 })),
             highlightExtension
         ],
         parent: container,
@@ -347,6 +364,28 @@ const highlightExtension = StateField.define({
     },
     provide: f => EditorView.decorations.from(f)
 })
+
+const check = (std: Package, module: Module): Context => {
+    const pkg: Package = { path: 'playground', name: 'playground', modules: [module] }
+    const ctx: Context = {
+        config: defaultConfig(),
+        moduleStack: [],
+        packages: [std, pkg],
+        impls: [],
+        errors: [],
+        warnings: [],
+        check: false
+    }
+    ctx.packages.forEach(p => {
+        p.modules.forEach(m => {
+            prepareModule(m)
+        })
+    })
+    ctx.impls = buildInstanceRelations(ctx)
+    ctx.check = true
+    ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx!))
+    return ctx
+}
 
 const highlightDecoration = Decoration.mark({
     class: 'highlight'

@@ -27,7 +27,7 @@ export const destructureAstNode = (node: AstNode<any>): DestructuredAstNode => {
             if (v === undefined) {
                 return [{ kind: p }]
             }
-            if ('parseNode' in v) {
+            if (typeof v === 'object' && 'parseNode' in v) {
                 return [{ kind: p, children: [destructureAstNode(v)] }]
             }
             if (Array.isArray(v)) {
