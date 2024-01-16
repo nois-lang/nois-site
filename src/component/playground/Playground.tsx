@@ -16,14 +16,15 @@ import { tags } from '@lezer/highlight'
 import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
-import { Module, buildModuleAst } from 'nois/dist/ast'
-import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/dist/error'
-import { ParseToken, erroneousTokenKinds, tokenize } from 'nois/dist/lexer/lexer'
-import { LocationRange } from 'nois/dist/location'
-import { useColoredOutput } from 'nois/dist/output'
-import { parseModule } from 'nois/dist/parser/fns'
-import { Parser } from 'nois/dist/parser/parser'
-import { Source } from 'nois/dist/source'
+import { Module, buildModuleAst } from 'nois/ast'
+import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/error'
+import { ParseToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
+import { LocationRange } from 'nois/location'
+import { stdModuleVids } from 'nois/std-index'
+import { useColoredOutput } from 'nois/output'
+import { parseModule } from 'nois/parser/fns'
+import { Parser } from 'nois/parser/parser'
+import { Source } from 'nois/source'
 import type { Component } from 'solid-js'
 import { For, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
 import logo from '../../assets/logo_full.svg'
@@ -35,6 +36,11 @@ import { LangError } from '../lang-error/LangError'
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 import { Toolbar } from '../toolbar/Toolbar'
 import styles from './Playground.module.scss'
+import { buildPackageFromVids } from '../../package'
+import { Context } from 'nois/scope'
+import { defaultConfig } from 'nois/config'
+import { checkModule, prepareModule } from 'nois/semantic'
+import { buildInstanceRelations } from 'nois/scope/trait'
 
 type Tab = 'parse-tree' | 'ast-tree'
 
@@ -75,6 +81,7 @@ const [parserDiagnostics, setParserDiagnostics] = createSignal<Diagnostic[]>([])
 export const Playground: Component = () => {
     const source = (): Source => ({ code: code(), filepath: 'playground.no' })
     const vid = { names: ['test'] }
+    let ctx: Context | undefined
 
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
@@ -91,9 +98,28 @@ export const Playground: Component = () => {
         setSearchParams({ code: undefined })
         setCode(startCode)
         ed = createEditor(editorContainer!, startCode)
+        buildPackageFromVids('std', stdModuleVids).then(std => {
+            ctx = {
+                config: defaultConfig(),
+                moduleStack: [],
+                packages: [std],
+                impls: [],
+                errors: [],
+                warnings: [],
+                check: false
+            }
+            ctx.packages.forEach(p => {
+                p.modules.forEach(m => {
+                    prepareModule(m)
+                })
+            })
+            ctx.impls = buildInstanceRelations(ctx)
+            ctx.check = true
+            ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx!))
+        })
     })
 
-    const updateParseTreeHighlight = () => {
+    createEffect(() => {
         if (!ed) return
 
         ed.dispatch({ effects: rmHighlightEffect.of() })
@@ -102,8 +128,7 @@ export const Playground: Component = () => {
         if (!location) return
 
         ed.dispatch({ effects: highlightEffect.of([highlightDecoration.range(location.start, location.end + 1)]) })
-    }
-    createEffect(updateParseTreeHighlight)
+    })
 
     const updateCode = () => {
         try {
@@ -283,12 +308,7 @@ const createEditor = (container: HTMLDivElement, value: string): EditorView => {
             indentationMarkers({
                 hideFirstIndent: true,
                 highlightActiveBlock: false,
-                colors: {
-                    light: 'var(--bg2)',
-                    activeLight: 'var(--bg2)',
-                    dark: 'var(--bg2)',
-                    activeDark: 'var(--bg2)'
-                }
+                colors: { light: 'var(--bg2)', activeLight: 'var(--bg2)', dark: 'var(--bg2)', activeDark: 'var(--bg2)' }
             }),
             linter(() => [...lexerDiagnostics(), ...parserDiagnostics()], { delay: 0 }),
             highlightExtension

@@ -1,8 +1,8 @@
+import { AstNode } from 'nois/ast'
+import { ParseNode, getLocationRange } from 'nois/parser'
 import { Component, Match, Switch } from 'solid-js'
-import { getLocationRange, ParseNode } from 'nois/dist/parser'
 import { hovered, setHovered, showGroups } from '../playground/Playground'
 import styles from './AstTreePreview.module.scss'
-import { AstNode } from 'nois/dist/ast'
 
 export interface DestructuredAstNode {
     kind: string

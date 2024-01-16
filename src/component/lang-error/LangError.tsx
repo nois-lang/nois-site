@@ -1,6 +1,6 @@
-import { prettySourceMessage } from 'nois/dist/error'
-import { LocationRange } from 'nois/dist/location'
-import { Source } from 'nois/dist/source'
+import { prettySourceMessage } from 'nois/error'
+import { LocationRange } from 'nois/location'
+import { Source } from 'nois/source'
 import { Component } from 'solid-js'
 import styles from './LangError.module.scss'
 

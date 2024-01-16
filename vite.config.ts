@@ -6,7 +6,7 @@ export default defineConfig({
     plugins: [
         solidPlugin(),
         viteStaticCopy({
-            targets: [{ src: 'node_modules/nois/dist/std', dest: '.' }]
+            targets: [{ src: 'node_modules/nois/std', dest: '.' }]
         })
     ],
     server: {
