@@ -7,6 +7,7 @@
     &.hover {
         background-color: var(--bg3);
     }
+
     .kind {
         padding: 0 0 1px 4px;
 
@@ -15,6 +16,7 @@
             font-weight: 300;
         }
     }
+
     .children {
         display: flex;
         flex-direction: column;
@@ -23,6 +25,7 @@
             margin-left: 2ch;
         }
     }
+
     .value {
         margin-left: 1ch;
     }

@@ -3,7 +3,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { rust } from '@codemirror/lang-rust'
 import { HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
 import { Diagnostic, lintKeymap, linter } from '@codemirror/lint'
-import { Compartment, StateEffect, StateField } from '@codemirror/state'
+import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state'
 import {
     Decoration,
     drawSelection,
@@ -47,37 +47,45 @@ import { SemanticError } from 'nois/semantic/error'
 
 type Tab = 'parse-tree' | 'ast-tree' | 'diagnostics'
 
-export const defaultCode = `\
+const exampleMap = {
+    helloWorld: `\
+fn main() {
+    println("Hello, world!")
+}`,
+    welcome: `\
 trait Area {
-    fn area(self): Num
+    fn area(self): Float
 }
 
 type Shape {
-    Rect(width: Num, height: Num),
-    Circle(radius: Num),
+    Rect(width: Float, height: Float),
+    Circle(radius: Float),
 }
 
 impl Area for Shape {
-    fn area(self): Num {
+    fn area(self): Float {
         match self {
             Shape::Rect(width, height) { width * height },
-            Shape::Circle(radius) { math::pi * radius ^ 2 }
+            Shape::Circle(radius) { math::pi * radius ^ 2. }
         }
     }
 }
 
 fn main() {
     let shapes: List<Shape> = [
-        Shape::Rect(width: 4, height: 2),
+        Shape::Rect(width: 4., height: 2.),
         Shape::Circle(radius: 12.34),
     ]
     println(shapes.iter().map(Area::area).into<List>())
 }`
+}
+type CodeExample = keyof typeof exampleMap
 
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
 export const [tab, setTab] = createSignal<Tab>('ast-tree')
-const [code, setCode] = createSignal(defaultCode)
+export const [example, setExample] = createSignal<CodeExample>('welcome')
+const [code, setCode] = createSignal(exampleMap.welcome)
 const [diagnostics, setDiagnostics] = createSignal<Diagnostic[]>([])
 const [std, setStd] = createSignal<Package>()
 
@@ -100,7 +108,7 @@ export const Playground: Component = () => {
     let ed: EditorView | undefined
 
     onMount(() => {
-        const startCode = searchParams.code ? decode(searchParams.code) : defaultCode
+        const startCode = searchParams.code ? decode(searchParams.code) : exampleMap.welcome
         setSearchParams({ code: undefined })
         setCode(startCode)
         ed = createEditor(editorContainer!, startCode)
@@ -121,6 +129,12 @@ export const Playground: Component = () => {
         if (!location) return
 
         ed.dispatch({ effects: highlightEffect.of([highlightDecoration.range(location.start, location.end + 1)]) })
+    })
+
+    createEffect(() => {
+        const newCode = exampleMap[example()]
+        setCode(newCode)
+        ed?.dispatch({ changes: { from: 0, to: ed.state.doc.length, insert: newCode } })
     })
 
     const updateCode = () => {
@@ -277,10 +291,14 @@ const Header: Component = () => {
     }
     return (
         <div class={styles.header}>
-            <div>
+            <div class={styles.left}>
                 <A href={'/'} class={styles.logo}>
                     <img src={logo} alt={'Nois logo'} />
                 </A>
+                <select onChange={e => setExample(e.target.value as CodeExample)} value={example()}>
+                    <option value={'welcome'}>{'Welcome'}</option>
+                    <option value={'helloWorld'}>{'Hello world'}</option>
+                </select>
             </div>
             <div>
                 <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>

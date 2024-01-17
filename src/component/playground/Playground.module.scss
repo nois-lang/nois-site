@@ -39,6 +39,10 @@
                 margin-left: auto;
             }
         }
+
+        .left {
+            justify-content: space-between;
+        }
     }
     .editorContainer {
         grid-row: 2/3;
