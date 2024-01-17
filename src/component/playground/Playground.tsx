@@ -18,7 +18,7 @@ import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
 import { Module, buildModuleAst } from 'nois/ast'
 import { defaultConfig } from 'nois/config'
-import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/error'
+import { SyntaxError, prettyLexerError, prettySourceMessage, prettySyntaxError } from 'nois/error'
 import { ParseToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
 import { LocationRange } from 'nois/location'
 import { useColoredOutput } from 'nois/output'
@@ -43,8 +43,9 @@ import { LangError } from '../lang-error/LangError'
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 import { Toolbar } from '../toolbar/Toolbar'
 import styles from './Playground.module.scss'
+import { SemanticError } from 'nois/semantic/error'
 
-type Tab = 'parse-tree' | 'ast-tree'
+type Tab = 'parse-tree' | 'ast-tree' | 'diagnostics'
 
 export const defaultCode = `\
 trait Area {
@@ -90,6 +91,7 @@ export const Playground: Component = () => {
     const [module, setModule] = createSignal<Module>()
     const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
+    const [semanticErrors, setSemanticErrors] = createSignal<SemanticError[]>()
     const [fatalError, setFatalError] = createSignal<Error>()
 
     const [searchParams, setSearchParams] = useSearchParams()
@@ -166,9 +168,11 @@ export const Playground: Component = () => {
                                 }
                             })
                     )
+                    setSemanticErrors(ctx.errors.length !== 0 ? ctx.errors : undefined)
                 }
             } else {
                 setModule(undefined)
+                setSemanticErrors(undefined)
 
                 ds.push(
                     ...errorTs.map(t => ({
@@ -208,7 +212,14 @@ export const Playground: Component = () => {
         ...(syntaxErrors()?.map(e => ({
             message: prettySyntaxError(e),
             location: e.got.location
-        })) || [])
+        })) || []),
+        ...(semanticErrors()?.map(e => {
+            const location = getLocationRange(e.node.parseNode)
+            return {
+                message: prettySourceMessage(e.message, location, e.module.source),
+                location
+            }
+        }) || [])
     ]
 
     return (
@@ -218,12 +229,15 @@ export const Playground: Component = () => {
             <div class={styles.container}>
                 <div class={styles.rightPanel}>
                     <Switch>
-                        <Match when={module()}>
+                        <Match when={fatalError()}>
+                            <FatalError message={formatError(fatalError()!, code())} />
+                        </Match>
+                        <Match when={true}>
                             <Switch>
-                                <Match when={tab() === 'parse-tree'}>
+                                <Match when={tab() === 'parse-tree' && module()}>
                                     <ParseTreePreview node={module()!.parseNode} />
                                 </Match>
-                                <Match when={tab() === 'ast-tree'}>
+                                <Match when={tab() === 'ast-tree' && module()}>
                                     <Toolbar>
                                         <button
                                             type={'button'}
@@ -235,21 +249,16 @@ export const Playground: Component = () => {
                                     </Toolbar>
                                     <AstTreePreview node={destructureAstNode(module()!)} />
                                 </Match>
+                                <Match when={tab() === 'diagnostics' || !module()}>
+                                    <div class={styles.errors}>
+                                        <For each={allErrors()}>
+                                            {({ message, location }) => (
+                                                <LangError message={message} location={location} source={source()} />
+                                            )}
+                                        </For>
+                                    </div>
+                                </Match>
                             </Switch>
-                        </Match>
-                        <Match when={fatalError()}>
-                            <FatalError message={formatError(fatalError()!, code())} />
-                        </Match>
-                        <Match when={true}>
-                            {
-                                <div class={styles.errors}>
-                                    <For each={allErrors()}>
-                                        {({ message, location }) => (
-                                            <LangError message={message} location={location} source={source()} />
-                                        )}
-                                    </For>
-                                </div>
-                            }
                         </Match>
                     </Switch>
                 </div>
@@ -277,6 +286,7 @@ const Header: Component = () => {
                 <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>
                     <option value={'parse-tree'}>{'Parse tree'}</option>
                     <option value={'ast-tree'}>{'AST tree'}</option>
+                    <option value={'diagnostics'}>{'Diagnostics'}</option>
                 </select>
                 <div class={styles.right}>
                     <a ref={shareButton} title={'Copy playground link'} onClick={copyLinkToClipboard}>
