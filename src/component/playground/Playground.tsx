@@ -3,7 +3,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { rust } from '@codemirror/lang-rust'
 import { HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
 import { Diagnostic, lintKeymap, linter } from '@codemirror/lint'
-import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state'
+import { Compartment, StateEffect, StateField } from '@codemirror/state'
 import {
     Decoration,
     drawSelection,
@@ -18,7 +18,7 @@ import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
 import { Module, buildModuleAst } from 'nois/ast'
 import { defaultConfig } from 'nois/config'
-import { SyntaxError, prettyLexerError, prettySourceMessage, prettySyntaxError } from 'nois/error'
+import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/error'
 import { ParseToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
 import { LocationRange } from 'nois/location'
 import { useColoredOutput } from 'nois/output'
@@ -29,6 +29,7 @@ import { Parser } from 'nois/parser/parser'
 import { Context } from 'nois/scope'
 import { buildInstanceRelations } from 'nois/scope/trait'
 import { checkModule, prepareModule } from 'nois/semantic'
+import { SemanticError } from 'nois/semantic/error'
 import { Source } from 'nois/source'
 import { stdModuleVids } from 'nois/std-index'
 import type { Component } from 'solid-js'
@@ -43,7 +44,6 @@ import { LangError } from '../lang-error/LangError'
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 import { Toolbar } from '../toolbar/Toolbar'
 import styles from './Playground.module.scss'
-import { SemanticError } from 'nois/semantic/error'
 
 type Tab = 'parse-tree' | 'ast-tree' | 'diagnostics'
 
@@ -228,11 +228,7 @@ export const Playground: Component = () => {
             location: e.got.location
         })) || []),
         ...(semanticErrors()?.map(e => {
-            const location = getLocationRange(e.node.parseNode)
-            return {
-                message: prettySourceMessage(e.message, location, e.module.source),
-                location
-            }
+            return { message: e.message, location: getLocationRange(e.node.parseNode) }
         }) || [])
     ]
 
