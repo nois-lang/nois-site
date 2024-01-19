@@ -47,9 +47,7 @@ export const AstTreePreview: Component<AstTreePreviewProps> = p => {
     return (
         <Switch>
             <Match when={isGroup && !showGroups()}>
-                <div class={styles.children}>
-                    {p.node.children !== undefined ? p.node.children.map(c => <AstTreePreview node={c} />) : ''}
-                </div>
+                {p.node.children !== undefined ? p.node.children.map(c => <AstTreePreview node={c} />) : ''}
             </Match>
             <Match when={true}>
                 <div

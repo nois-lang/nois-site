@@ -11,7 +11,9 @@
     .children {
         display: flex;
         flex-direction: column;
-        padding-left: 2ch;
+        padding-left: 1ch;
+        margin-left: 1ch;
+        border-left: 1px solid var(--bg2);
     }
     .value {
         margin-left: 1ch;

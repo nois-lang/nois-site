@@ -20,9 +20,11 @@
     .children {
         display: flex;
         flex-direction: column;
+        margin-left: 1ch;
+        border-left: 1px solid var(--bg2);
 
         .node {
-            margin-left: 2ch;
+            margin-left: 1ch;
         }
     }
 
