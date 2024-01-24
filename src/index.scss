@@ -42,6 +42,7 @@ body {
 
 html {
     font-size: 16px;
+    overscroll-behavior: none;
 }
 
 html,
@@ -50,6 +51,7 @@ body,
     margin: 0;
     width: 100%;
     height: 100%;
+    -webkit-text-size-adjust: none;
 }
 
 * {
@@ -166,7 +168,7 @@ select {
     }
 
     .cm-panels-bottom {
-        border-top: 1px solid var(--bg3)
+        border-top: 1px solid var(--bg3);
     }
 
     .cm-tooltip {

@@ -256,7 +256,7 @@ const Header: Component = () => {
                     <option value={'helloWorld'}>{'Hello world'}</option>
                 </select>
             </div>
-            <div>
+            <div class={styles.right}>
                 <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>
                     <option value={'parse-tree'}>{'Parse tree'}</option>
                     <option value={'ast-tree'}>{'AST tree'}</option>
