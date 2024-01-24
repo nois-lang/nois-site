@@ -1,19 +1,4 @@
-import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { rust } from '@codemirror/lang-rust'
-import { HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
-import { Diagnostic, lintKeymap, linter } from '@codemirror/lint'
-import { Compartment, StateEffect, StateField } from '@codemirror/state'
-import {
-    Decoration,
-    drawSelection,
-    highlightActiveLine,
-    highlightActiveLineGutter,
-    keymap,
-    lineNumbers
-} from '@codemirror/view'
-import { tags } from '@lezer/highlight'
-import { indentationMarkers } from '@replit/codemirror-indentation-markers'
+import { Diagnostic } from '@codemirror/lint'
 import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
 import { Module, buildModuleAst } from 'nois/ast'
@@ -35,6 +20,20 @@ import { stdModuleVids } from 'nois/std-index'
 import type { Component } from 'solid-js'
 import { For, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
 import logo from '../../assets/logo_full.svg'
+import {
+    CodeExample,
+    code,
+    createEditor,
+    exampleMap,
+    formatError,
+    highlightDecoration,
+    highlightEffect,
+    linterCompartment,
+    makeLinter,
+    rmHighlightEffect,
+    setCode,
+    setDiagnostics
+} from '../../editor'
 import { decode, encode } from '../../encode'
 import { buildPackageFromVids } from '../../package'
 import { showTooltip } from '../../tooltip'
@@ -47,50 +46,11 @@ import styles from './Playground.module.scss'
 
 type Tab = 'parse-tree' | 'ast-tree' | 'diagnostics'
 
-const exampleMap = {
-    helloWorld: `\
-fn main() {
-    println("Hello, world!")
-}`,
-    welcome: `\
-trait Area {
-    fn area(self): Float
-}
-
-type Shape {
-    Rect(width: Float, height: Float),
-    Circle(radius: Float),
-}
-
-impl Area for Shape {
-    fn area(self): Float {
-        match self {
-            Shape::Rect(width, height) { width * height },
-            Shape::Circle(radius) { math::pi * radius ^ 2. }
-        }
-    }
-}
-
-fn main() {
-    let shapes: List<Shape> = [
-        Shape::Rect(width: 4., height: 2.),
-        Shape::Circle(radius: 12.34),
-    ]
-    println(shapes.iter().map(Area::area).collect<List<_>>())
-}`
-}
-type CodeExample = keyof typeof exampleMap
-
 export const [hovered, setHovered] = createSignal<RefLocationPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
 export const [tab, setTab] = createSignal<Tab>('ast-tree')
 export const [example, setExample] = createSignal<CodeExample>('welcome')
-const [code, setCode] = createSignal(exampleMap.welcome)
-const [diagnostics, setDiagnostics] = createSignal<Diagnostic[]>([])
 const [std, setStd] = createSignal<Package>()
-
-const linterCompartment = new Compartment()
-const makeLinter = linter(diagnostics, { delay: 0 })
 
 export const Playground: Component = () => {
     const source = (): Source => ({ code: code(), filepath: 'playground.no' })
@@ -152,7 +112,6 @@ export const Playground: Component = () => {
             const ds: Diagnostic[] = []
             if (errorTs.length === 0 && parser.errors.length === 0) {
                 const mod = buildModuleAst(parseTree, vid, source())
-                setModule(mod)
                 const stdPkg = std()
                 if (stdPkg) {
                     const ctx = check(stdPkg, mod)
@@ -184,6 +143,7 @@ export const Playground: Component = () => {
                     )
                     setSemanticErrors(ctx.errors.length !== 0 ? ctx.errors : undefined)
                 }
+                setModule(mod)
             } else {
                 setModule(undefined)
                 setSemanticErrors(undefined)
@@ -320,75 +280,6 @@ interface RefLocationPair {
     location: LocationRange
 }
 
-const createEditor = (container: HTMLDivElement, value: string): EditorView => {
-    const style = HighlightStyle.define([
-        { tag: tags.comment, color: 'var(--hl-comment)' },
-        { tag: tags.keyword, color: 'var(--hl-keyword)' },
-        { tag: tags.number, color: 'var(--hl-number)' },
-        { tag: tags.string, color: 'var(--hl-string)' },
-        { tag: tags.character, color: 'var(--hl-string)' }
-    ])
-    const ed = new EditorView({
-        extensions: [
-            lineNumbers(),
-            highlightActiveLineGutter(),
-            history(),
-            drawSelection(),
-            indentOnInput(),
-            bracketMatching(),
-            closeBrackets(),
-            autocompletion(),
-            highlightActiveLine(),
-            keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...completionKeymap, ...lintKeymap]),
-            syntaxHighlighting(style),
-            rust(),
-            EditorView.updateListener.of(e => {
-                setCode(e.state.doc.toString())
-            }),
-            indentUnit.of(' '.repeat(4)),
-            indentationMarkers({
-                hideFirstIndent: true,
-                highlightActiveBlock: false,
-                colors: { light: 'var(--bg2)', activeLight: 'var(--bg2)', dark: 'var(--bg2)', activeDark: 'var(--bg2)' }
-            }),
-            linterCompartment.of(linter(diagnostics, { delay: 100 })),
-            highlightExtension
-        ],
-        parent: container,
-        doc: value
-    })
-    return ed
-}
-
-const formatError = (error: Error, code: string): string => {
-    const errorMsg = error.stack ?? `${error.name}: ${error.message}`
-    return `Code: ${JSON.stringify(code)}\n${errorMsg}`
-}
-
-const highlightEffect = StateEffect.define<any>()
-const rmHighlightEffect = StateEffect.define<void>()
-
-const highlightExtension = StateField.define({
-    create() {
-        return Decoration.none
-    },
-    update(value, transaction) {
-        value = value.map(transaction.changes)
-
-        for (let effect of transaction.effects) {
-            if (effect.is(highlightEffect)) {
-                value = value.update({ add: effect.value })
-            }
-            if (effect.is(rmHighlightEffect)) {
-                value = Decoration.none
-            }
-        }
-
-        return value
-    },
-    provide: f => EditorView.decorations.from(f)
-})
-
 const check = (std: Package, module: Module): Context => {
     const pkg: Package = { path: 'playground', name: 'playground', modules: [module] }
     const ctx: Context = {
@@ -410,7 +301,3 @@ const check = (std: Package, module: Module): Context => {
     ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx!))
     return ctx
 }
-
-const highlightDecoration = Decoration.mark({
-    class: 'highlight'
-})

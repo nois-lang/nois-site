@@ -28,7 +28,12 @@
         }
     }
 
-    .value {
+    .value,
+    .type {
         margin-left: 1ch;
+    }
+
+    .type {
+        color: var(--hl-keyword)
     }
 }
