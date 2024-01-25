@@ -1,8 +1,8 @@
 import { Component } from 'solid-js'
-import styles from './FatalError.module.scss'
-import { Toolbar } from '../toolbar/Toolbar'
 import 'tippy.js/dist/tippy.css'
 import { showTooltip } from '../../tooltip'
+import { Toolbar } from '../toolbar/Toolbar'
+import styles from './FatalError.module.scss'
 
 type FatalErrorProps = { message: string }
 

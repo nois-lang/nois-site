@@ -1,4 +1,4 @@
-import { getLocationRange, ParseNode } from 'nois/parser'
+import { ParseNode, getLocationRange } from 'nois/parser'
 import { Component } from 'solid-js'
 import { hovered, setHovered } from '../playground/Playground'
 import styles from './ParseTreePreview.module.scss'

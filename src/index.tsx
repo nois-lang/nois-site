@@ -1,9 +1,9 @@
+import { Route, Router } from '@solidjs/router'
 /* @refresh reload */
 import { render } from 'solid-js/web'
-import './index.scss'
-import { Playground } from './component/playground/Playground'
-import { Route, Router } from '@solidjs/router'
 import { Home } from './component/home/Home'
+import { Playground } from './component/playground/Playground'
+import './index.scss'
 
 render(
     () => (

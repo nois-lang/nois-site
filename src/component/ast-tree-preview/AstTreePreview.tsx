@@ -1,10 +1,10 @@
 import { AstNode } from 'nois/ast'
 import { ParseNode, getLocationRange } from 'nois/parser'
+import { Typed } from 'nois/semantic'
+import { virtualTypeToString } from 'nois/typecheck'
 import { Component, Match, Switch } from 'solid-js'
 import { hovered, setHovered, showGroups } from '../playground/Playground'
 import styles from './AstTreePreview.module.scss'
-import { Typed } from 'nois/semantic'
-import { virtualTypeToString } from 'nois/typecheck'
 
 export interface DestructuredAstNode {
     kind: string

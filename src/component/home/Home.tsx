@@ -1,7 +1,7 @@
+import { A } from '@solidjs/router'
 import type { Component } from 'solid-js'
 import logo from '../../assets/logo_full.svg'
 import styles from './Home.module.scss'
-import { A } from '@solidjs/router'
 
 export const Home: Component = () => {
     return (
