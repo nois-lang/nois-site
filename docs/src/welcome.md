@@ -17,7 +17,7 @@ type Shape {
 impl Area for Shape {
     fn area(self): Num {
         match self {
-            Rect(width, height) -> width * height,
+            Rect(width, height) -> width * height
             Circle(radius) -> math::pi * radius ^ 2
         }
     }
