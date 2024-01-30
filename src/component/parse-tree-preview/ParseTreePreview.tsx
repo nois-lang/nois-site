@@ -1,4 +1,4 @@
-import { ParseNode, getLocationRange } from 'nois/parser'
+import { ParseNode, getSpan } from 'nois/parser'
 import { Component } from 'solid-js'
 import { hovered, setHovered } from '../playground/Playground'
 import styles from './ParseTreePreview.module.scss'
@@ -14,7 +14,7 @@ export const ParseTreePreview: Component<ParseTreePreviewProps> = p => {
             classList={{ [styles.hover]: hovered()?.ref === ref }}
             onpointerover={e => {
                 if (!ref?.contains(e.target)) return
-                setHovered({ ref, location: getLocationRange(p.node) })
+                setHovered({ ref, span: getSpan(p.node) })
                 e.stopPropagation()
             }}
             onpointerleave={e => {

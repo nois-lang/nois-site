@@ -5,10 +5,10 @@ import { Module, buildModuleAst } from 'nois/ast'
 import { defaultConfig } from 'nois/config'
 import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/error'
 import { ParseToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
-import { LocationRange } from 'nois/location'
+import { Span } from 'nois/location'
 import { useColoredOutput } from 'nois/output'
 import { Package } from 'nois/package'
-import { getLocationRange } from 'nois/parser'
+import { getSpan } from 'nois/parser'
 import { parseModule } from 'nois/parser/fns'
 import { Parser } from 'nois/parser/parser'
 import { Context } from 'nois/scope'
@@ -46,7 +46,7 @@ import styles from './Playground.module.scss'
 
 type Tab = 'parse-tree' | 'ast-tree' | 'diagnostics'
 
-export const [hovered, setHovered] = createSignal<RefLocationPair>()
+export const [hovered, setHovered] = createSignal<RefSpanPair>()
 export const [showGroups, setShowGroups] = createSignal(false)
 export const [tab, setTab] = createSignal<Tab>('ast-tree')
 export const [example, setExample] = createSignal<CodeExample>('welcome')
@@ -85,10 +85,10 @@ export const Playground: Component = () => {
 
         ed.dispatch({ effects: rmHighlightEffect.of() })
 
-        const location = hovered()?.location
-        if (!location) return
+        const span = hovered()?.span
+        if (!span) return
 
-        ed.dispatch({ effects: highlightEffect.of([highlightDecoration.range(location.start, location.end + 1)]) })
+        ed.dispatch({ effects: highlightEffect.of([highlightDecoration.range(span.start, span.end)]) })
     })
 
     createEffect(() => {
@@ -119,10 +119,10 @@ export const Playground: Component = () => {
                         ...ctx.errors
                             .filter(e => e.module === mod)
                             .map(e => {
-                                const range = getLocationRange(e.node.parseNode)
+                                const range = getSpan(e.node.parseNode)
                                 return {
                                     from: range.start,
-                                    to: range.end + 1,
+                                    to: range.end,
                                     severity: 'error' as const,
                                     message: e.message
                                 }
@@ -132,10 +132,10 @@ export const Playground: Component = () => {
                         ...ctx.warnings
                             .filter(e => e.module === mod)
                             .map(e => {
-                                const range = getLocationRange(e.node.parseNode)
+                                const range = getSpan(e.node.parseNode)
                                 return {
                                     from: range.start,
-                                    to: range.end + 1,
+                                    to: range.end,
                                     severity: 'warning' as const,
                                     message: e.message
                                 }
@@ -150,16 +150,16 @@ export const Playground: Component = () => {
 
                 ds.push(
                     ...errorTs.map(t => ({
-                        from: t.location.start,
-                        to: t.location.end + 1,
+                        from: t.span.start,
+                        to: t.span.end,
                         severity: 'error' as const,
                         message: prettyLexerError(t)
                     }))
                 )
                 ds.push(
                     ...parser.errors.map(e => ({
-                        from: e.got.location.start,
-                        to: e.got.location.end + 1,
+                        from: e.got.span.start,
+                        to: e.got.span.end,
                         severity: 'error' as const,
                         message: prettySyntaxError(e)
                     }))
@@ -181,14 +181,14 @@ export const Playground: Component = () => {
     const allErrors = () => [
         ...(errorTokens()?.map(t => ({
             message: prettyLexerError(t),
-            location: t.location
+            span: t.span
         })) || []),
         ...(syntaxErrors()?.map(e => ({
             message: prettySyntaxError(e),
-            location: e.got.location
+            span: e.got.span
         })) || []),
         ...(semanticErrors()?.map(e => {
-            return { message: e.message, location: getLocationRange(e.node.parseNode) }
+            return { message: e.message, span: getSpan(e.node.parseNode) }
         }) || [])
     ]
 
@@ -222,8 +222,8 @@ export const Playground: Component = () => {
                                 <Match when={tab() === 'diagnostics' || !module()}>
                                     <div class={styles.errors}>
                                         <For each={allErrors()}>
-                                            {({ message, location }) => (
-                                                <LangError message={message} location={location} source={source()} />
+                                            {({ message, span }) => (
+                                                <LangError message={message} span={span} source={source()} />
                                             )}
                                         </For>
                                     </div>
@@ -275,9 +275,9 @@ const Header: Component = () => {
     )
 }
 
-interface RefLocationPair {
+interface RefSpanPair {
     ref: HTMLDivElement
-    location: LocationRange
+    span: Span
 }
 
 const check = (std: Package, module: Module): Context => {

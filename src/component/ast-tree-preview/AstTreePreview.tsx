@@ -1,5 +1,5 @@
 import { AstNode } from 'nois/ast'
-import { ParseNode, getLocationRange } from 'nois/parser'
+import { ParseNode, getSpan } from 'nois/parser'
 import { Typed } from 'nois/semantic'
 import { virtualTypeToString } from 'nois/typecheck'
 import { Component, Match, Switch } from 'solid-js'
@@ -62,7 +62,7 @@ export const AstTreePreview: Component<AstTreePreviewProps> = p => {
                     onPointerOver={e => {
                         if (!ref?.contains(e.target)) return
                         if (!p.node.parseNode) return
-                        setHovered({ ref, location: getLocationRange(p.node.parseNode) })
+                        setHovered({ ref, span: getSpan(p.node.parseNode) })
                         e.stopPropagation()
                     }}
                     onPointerLeave={e => {
