@@ -4,7 +4,7 @@ import { EditorView } from 'codemirror'
 import { Module, buildModuleAst } from 'nois/ast'
 import { defaultConfig } from 'nois/config'
 import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/error'
-import { ParseToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
+import { LexerToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
 import { Span } from 'nois/location'
 import { useColoredOutput } from 'nois/output'
 import { Package } from 'nois/package'
@@ -57,7 +57,7 @@ export const Playground: Component = () => {
     const vid = { names: ['playground'] }
 
     const [module, setModule] = createSignal<Module>()
-    const [errorTokens, setErrorTokens] = createSignal<ParseToken[]>()
+    const [errorTokens, setErrorTokens] = createSignal<LexerToken[]>()
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
     const [semanticErrors, setSemanticErrors] = createSignal<SemanticError[]>()
     const [fatalError, setFatalError] = createSignal<Error>()
