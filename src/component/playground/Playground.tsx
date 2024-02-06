@@ -17,7 +17,7 @@ import { checkModule, prepareModule } from 'nois/semantic'
 import { SemanticError } from 'nois/semantic/error'
 import { Source } from 'nois/source'
 import { stdModuleVids } from 'nois/std-index'
-import type { Component } from 'solid-js'
+import { Component } from 'solid-js'
 import { For, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
 import logo from '../../assets/logo_full.svg'
 import {
@@ -289,7 +289,8 @@ const check = (std: Package, module: Module): Context => {
         impls: [],
         errors: [],
         warnings: [],
-        check: false
+        check: false,
+        silent: false
     }
     ctx.packages.forEach(p => {
         p.modules.forEach(m => {

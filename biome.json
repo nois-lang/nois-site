@@ -5,6 +5,34 @@
         "indentStyle": "space",
         "indentWidth": 4
     },
+    "linter": {
+        "rules": {
+            "recommended": true,
+            "nursery": {
+                "noUnusedImports": "warn",
+                "useImportType": "off"
+            },
+            "correctness": {
+                "noSwitchDeclarations": "off"
+            },
+            "suspicious": {
+                "noExplicitAny": "off",
+                "noShadowRestrictedNames": "off",
+                "noConfusingVoidType": "off"
+            },
+            "complexity": {
+                "noForEach": "off"
+            },
+            "style": {
+                "noNonNullAssertion": "off",
+                "noUnusedTemplateLiteral": "off",
+                "noInferrableTypes": "off",
+                "noUselessElse": "off",
+                "useTemplate": "off",
+                "noParameterAssign": "off"
+            }
+        }
+    },
     "javascript": {
         "formatter": {
             "quoteStyle": "single",
