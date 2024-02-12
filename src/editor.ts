@@ -24,6 +24,8 @@ fn main() {
     println("Hello, world!")
 }`,
     welcome: `\
+use std::math::pi
+
 trait Area {
     fn area(self): Float
 }
@@ -37,7 +39,7 @@ impl Area for Shape {
     fn area(self): Float {
         match self {
             Shape::Rect(width, height) { width * height }
-            Shape::Circle(radius) { math::pi * radius ^ 2. }
+            Shape::Circle(radius) { pi * radius ^ 2. }
         }
     }
 }
@@ -79,7 +81,7 @@ export const highlightExtension = StateField.define({
     update(value, transaction) {
         value = value.map(transaction.changes)
 
-        for (let effect of transaction.effects) {
+        for (const effect of transaction.effects) {
             if (effect.is(highlightEffect)) {
                 value = value.update({ add: effect.value })
             }
