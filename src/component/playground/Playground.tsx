@@ -8,9 +8,8 @@ import { LexerToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
 import { Span } from 'nois/location'
 import { useColoredOutput } from 'nois/output'
 import { Package } from 'nois/package'
-import { getSpan } from 'nois/parser'
+import { Parser, getSpan } from 'nois/parser'
 import { parseModule } from 'nois/parser/fns'
-import { Parser } from 'nois/parser/parser'
 import { Context } from 'nois/scope'
 import { buildInstanceRelations } from 'nois/scope/trait'
 import { checkModule, prepareModule } from 'nois/semantic'
@@ -290,7 +289,8 @@ const check = (std: Package, module: Module): Context => {
         errors: [],
         warnings: [],
         check: false,
-        silent: false
+        silent: false,
+        prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
     }
     ctx.packages.forEach(p => {
         p.modules.forEach(m => {
