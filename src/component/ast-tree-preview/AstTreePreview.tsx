@@ -12,6 +12,7 @@ export interface DestructuredAstNode {
     value?: string
     children?: DestructuredAstNode[]
     type?: string
+    pub?: boolean
 }
 
 export const destructureAstNode = (node: AstNode<any> & Partial<Typed>): DestructuredAstNode => {
@@ -21,9 +22,10 @@ export const destructureAstNode = (node: AstNode<any> & Partial<Typed>): Destruc
     const kind = node.kind
     const parseNode = node.parseNode
     const type = node.type ? virtualTypeToString(node.type) : undefined
+    const pub = 'pub' in node ? node.pub === true : undefined
     const value = 'value' in node && typeof node.value === 'string' ? node.value : undefined
     if (value !== undefined) {
-        return { kind, parseNode, value, type }
+        return { kind, parseNode, value, type, pub }
     }
     const children: DestructuredAstNode[] = Object.entries(node)
         .filter(([p]) => !['parseNode', 'kind', 'value'].includes(p))
@@ -40,7 +42,7 @@ export const destructureAstNode = (node: AstNode<any> & Partial<Typed>): Destruc
             }
             return []
         })
-    return { kind, parseNode, children, type }
+    return { kind, parseNode, children, type, pub }
 }
 
 type AstTreePreviewProps = { node: DestructuredAstNode }
@@ -77,6 +79,7 @@ export const AstTreePreview: Component<AstTreePreviewProps> = p => {
                         ) : (
                             ''
                         )}
+                        {p.node.pub === true ? <code class={styles.pub}>pub</code> : ''}
                         {p.node.type !== undefined ? <code class={styles.type}>{p.node.type}</code> : ''}
                     </p>
                     <div class={styles.children}>
