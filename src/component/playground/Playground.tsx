@@ -2,7 +2,7 @@ import { Diagnostic } from '@codemirror/lint'
 import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
 import { Module, buildModuleAst } from 'nois/ast'
-import { defaultConfig } from 'nois/config'
+import { makeConfig } from 'nois/config'
 import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/error'
 import { LexerToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
 import { Span } from 'nois/location'
@@ -266,7 +266,7 @@ const Header: Component = () => {
                         <i class="fa-solid fa-arrow-up-from-bracket" />
                     </a>
                     <A href={'https://github.com/nois-lang'}>
-                        <i class="fa-brands fa-github"></i>
+                        <i class="fa-brands fa-github" />
                     </A>
                 </div>
             </div>
@@ -280,9 +280,9 @@ interface RefSpanPair {
 }
 
 const check = (std: Package, module: Module): Context => {
-    const pkg: Package = { path: 'playground', name: 'playground', modules: [module] }
+    const pkg: Package = { path: 'playground', name: 'playground', modules: [module], compiled: false }
     const ctx: Context = {
-        config: defaultConfig(),
+        config: makeConfig(pkg.name, pkg.path),
         moduleStack: [],
         packages: [std, pkg],
         impls: [],

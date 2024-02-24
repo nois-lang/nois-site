@@ -13,5 +13,5 @@ export const buildPackageFromVids = async (name: string, paths: string[]): Promi
         })
     )
     const modules = sources.map(s => buildModule(s, pathToVid(s.filepath)))
-    return { path: name, name, modules: <Module[]>modules }
+    return { path: name, name, modules: <Module[]>modules, compiled: false }
 }
