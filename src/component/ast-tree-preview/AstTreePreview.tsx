@@ -48,7 +48,8 @@ export const destructureAstNode = (node: AstNode<any> & Partial<Typed>): Destruc
 type AstTreePreviewProps = { node: DestructuredAstNode }
 
 export const AstTreePreview: Component<AstTreePreviewProps> = p => {
-    const ref: HTMLDivElement | undefined = undefined
+    // biome-ignore lint: breaking
+    let ref: HTMLDivElement | undefined = undefined
 
     const isGroup = !p.node.value && !p.node.parseNode
     return (
