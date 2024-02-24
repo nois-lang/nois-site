@@ -12,7 +12,7 @@ import { Parser, getSpan } from 'nois/parser'
 import { parseModule } from 'nois/parser/fns'
 import { Context } from 'nois/scope'
 import { buildInstanceRelations } from 'nois/scope/trait'
-import { checkModule, prepareModule } from 'nois/semantic'
+import { checkModule, checkTopLevelDefinition, prepareModule } from 'nois/semantic'
 import { SemanticError } from 'nois/semantic/error'
 import { Source } from 'nois/source'
 import { stdModuleVids } from 'nois/std-index'
@@ -285,20 +285,17 @@ const check = (std: Package, module: Module): Context => {
         config: makeConfig(pkg.name, pkg.path),
         moduleStack: [],
         packages: [std, pkg],
+        prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
         impls: [],
         errors: [],
         warnings: [],
         check: false,
-        silent: false,
-        prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
+        silent: false
     }
-    ctx.packages.forEach(p => {
-        p.modules.forEach(m => {
-            prepareModule(m)
-        })
-    })
+    ctx.packages.forEach(p => p.modules.forEach(m => prepareModule(m)))
     ctx.impls = buildInstanceRelations(ctx)
+    ctx.impls.forEach(impl => checkTopLevelDefinition(impl.module, impl.instanceDef, ctx))
     ctx.check = true
-    ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx!))
+    pkg.modules.forEach(m => checkModule(m, ctx!))
     return ctx
 }
