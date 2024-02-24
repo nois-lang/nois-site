@@ -4,7 +4,7 @@ git clone https://github.com/nois-lang/nois ../nois
 pushd .
 cd ../nois
 npm install
-npm run build
+npm run publish
 ls dist
 
 popd
