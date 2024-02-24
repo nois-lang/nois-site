@@ -24,7 +24,7 @@ fn main() {
     println("Hello, world!")
 }`,
     welcome: `\
-use std::math::pi
+use std::{ math::pi, iter::MapAdapter }
 
 trait Area {
     fn area(self): Float
