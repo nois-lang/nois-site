@@ -7,6 +7,6 @@ import styles from './LangError.module.scss'
 type LangErrorProps = { message: string; span: Span; source: Source }
 
 export const LangError: Component<LangErrorProps> = p => {
-    let msg = prettySourceMessage(p.message, p.span, p.source)
+    const msg = prettySourceMessage(p.message, p.span, p.source)
     return <pre class={styles.LangError}>{msg}</pre>
 }

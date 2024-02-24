@@ -6,7 +6,7 @@ import styles from './ParseTreePreview.module.scss'
 type ParseTreePreviewProps = { node: ParseNode }
 
 export const ParseTreePreview: Component<ParseTreePreviewProps> = p => {
-    let ref: HTMLDivElement | undefined = undefined
+    const ref: HTMLDivElement | undefined = undefined
     return (
         <div
             ref={ref}

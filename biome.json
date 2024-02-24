@@ -30,6 +30,9 @@
                 "noUselessElse": "off",
                 "useTemplate": "off",
                 "noParameterAssign": "off"
+            },
+            "a11y": {
+                "useValidAnchor": "off"
             }
         }
     },
