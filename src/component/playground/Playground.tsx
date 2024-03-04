@@ -110,7 +110,7 @@ export const Playground: Component = () => {
 
             const ds: Diagnostic[] = []
             if (errorTs.length === 0 && parser.errors.length === 0) {
-                const mod = buildModuleAst(parseTree, vid, source())
+                const mod = buildModuleAst(parseTree, vid, source(), true)
                 const stdPkg = std()
                 if (stdPkg) {
                     const ctx = check(stdPkg, mod)
@@ -290,7 +290,8 @@ const check = (std: Package, module: Module): Context => {
         errors: [],
         warnings: [],
         check: false,
-        silent: false
+        silent: false,
+        variableCounter: 0
     }
     ctx.packages.forEach(p => p.modules.forEach(m => prepareModule(m)))
     ctx.impls = buildInstanceRelations(ctx)
