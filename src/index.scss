@@ -63,6 +63,7 @@ body,
 pre {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.9rem;
+    line-height: 1.2;
     margin: 0;
     overflow-y: auto;
 }
@@ -140,7 +141,6 @@ select {
     }
 
     .cm-line {
-        // display: flex;
         padding: 0;
     }
 

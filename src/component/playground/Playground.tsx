@@ -2,10 +2,11 @@ import { Diagnostic } from '@codemirror/lint'
 import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
 import { Module, buildModuleAst } from 'nois/ast'
+import { emitDeclaration } from 'nois/codegen/declaration'
+import { emitModule } from 'nois/codegen/js'
 import { makeConfig } from 'nois/config'
 import { SyntaxError, prettyLexerError, prettySyntaxError } from 'nois/error'
 import { LexerToken, erroneousTokenKinds, tokenize } from 'nois/lexer/lexer'
-import { Span } from 'nois/location'
 import { useColoredOutput } from 'nois/output'
 import { Package } from 'nois/package'
 import { Parser, getSpan } from 'nois/parser'
@@ -35,6 +36,7 @@ import {
 } from '../../editor'
 import { decode, encode } from '../../encode'
 import { buildPackageFromVids } from '../../package'
+import { Tab, example, hovered, setExample, setShowGroups, setStd, setTab, showGroups, std, tab } from '../../state'
 import { showTooltip } from '../../tooltip'
 import { AstTreePreview, destructureAstNode } from '../ast-tree-preview/AstTreePreview'
 import { FatalError } from '../fatal-error/FatalError'
@@ -42,14 +44,6 @@ import { LangError } from '../lang-error/LangError'
 import { ParseTreePreview } from '../parse-tree-preview/ParseTreePreview'
 import { Toolbar } from '../toolbar/Toolbar'
 import styles from './Playground.module.scss'
-
-type Tab = 'parse-tree' | 'ast-tree' | 'diagnostics'
-
-export const [hovered, setHovered] = createSignal<RefSpanPair>()
-export const [showGroups, setShowGroups] = createSignal(false)
-export const [tab, setTab] = createSignal<Tab>('ast-tree')
-export const [example, setExample] = createSignal<CodeExample>('welcome')
-const [std, setStd] = createSignal<Package>()
 
 export const Playground: Component = () => {
     const source = (): Source => ({ code: code(), filepath: 'playground.no' })
@@ -60,17 +54,28 @@ export const Playground: Component = () => {
     const [syntaxErrors, setSyntaxErrors] = createSignal<SyntaxError[]>()
     const [semanticErrors, setSemanticErrors] = createSignal<SemanticError[]>()
     const [fatalError, setFatalError] = createSignal<Error>()
+    const [outputEmit, setOutputEmit] = createSignal<string | undefined>()
+    const [declarationEmit, setDeclarationEmit] = createSignal<string | undefined>()
 
     const [searchParams, setSearchParams] = useSearchParams()
 
     let editorContainer: HTMLDivElement | undefined
     let ed: EditorView | undefined
+    let declarationEd: EditorView | undefined
+    let outputEd: EditorView | undefined
+    let declarationEditorContainer: HTMLDivElement | undefined
+    let outputEditorContainer: HTMLDivElement | undefined
 
     onMount(() => {
         const startCode = searchParams.code ? decode(searchParams.code) : exampleMap.welcome
         setSearchParams({ code: undefined })
         setCode(startCode)
-        ed = createEditor(editorContainer!, startCode)
+        ed = createEditor({
+            container: editorContainer!,
+            value: startCode,
+            onChange: e => setCode(e.state.doc.toString()),
+            lang: 'nois'
+        })
         ed.focus()
         buildPackageFromVids('std', stdModuleVids).then(pkg => {
             setStd(pkg)
@@ -96,6 +101,35 @@ export const Playground: Component = () => {
         ed?.dispatch({ changes: { from: 0, to: ed.state.doc.length, insert: newCode } })
     })
 
+    createEffect(() => {
+        if (tab() === 'emitted-declaration' && declarationEmit() && declarationEditorContainer) {
+            if (declarationEd) {
+                declarationEd.dispatch({
+                    changes: { from: 0, to: declarationEd.state.doc.length, insert: declarationEmit() }
+                })
+            } else {
+                declarationEd = createEditor({
+                    container: declarationEditorContainer,
+                    value: declarationEmit(),
+                    lang: 'nois'
+                })
+            }
+        } else {
+            declarationEd = undefined
+        }
+        if (tab() === 'emitted-output' && outputEmit() && outputEditorContainer) {
+            if (outputEd) {
+                outputEd?.dispatch({
+                    changes: { from: 0, to: outputEd.state.doc.length, insert: outputEmit() }
+                })
+            } else {
+                outputEd = createEditor({ container: outputEditorContainer, value: outputEmit(), lang: 'js' })
+            }
+        } else {
+            outputEd = undefined
+        }
+    })
+
     const updateCode = () => {
         try {
             useColoredOutput(false)
@@ -111,6 +145,7 @@ export const Playground: Component = () => {
             const ds: Diagnostic[] = []
             if (errorTs.length === 0 && parser.errors.length === 0) {
                 const mod = buildModuleAst(parseTree, vid, source(), true)
+                setModule(mod)
                 const stdPkg = std()
                 if (stdPkg) {
                     const ctx = check(stdPkg, mod)
@@ -141,11 +176,15 @@ export const Playground: Component = () => {
                             })
                     )
                     setSemanticErrors(ctx.errors.length !== 0 ? ctx.errors : undefined)
+
+                    setDeclarationEmit(ctx.errors.length === 0 ? emitDeclaration(mod) : undefined)
+                    setOutputEmit(ctx.errors.length === 0 ? emitModule(mod, ctx, 'main') : undefined)
                 }
-                setModule(mod)
             } else {
                 setModule(undefined)
                 setSemanticErrors(undefined)
+                setDeclarationEmit(undefined)
+                setOutputEmit(undefined)
 
                 ds.push(
                     ...errorTs.map(t => ({
@@ -194,40 +233,48 @@ export const Playground: Component = () => {
     return (
         <div class={styles.Playground}>
             <Header />
-            <div ref={editorContainer} class={styles.editorContainer} />
+            <div ref={editorContainer} class={`${styles.mainEditor} ${styles.editorContainer}`} />
             <div class={styles.container}>
                 <div class={styles.rightPanel}>
                     <Switch>
                         <Match when={fatalError()}>
                             <FatalError message={formatError(fatalError()!, code())} />
                         </Match>
-                        <Match when={true}>
-                            <Switch>
-                                <Match when={tab() === 'parse-tree' && module()}>
-                                    <ParseTreePreview node={module()!.parseNode} />
-                                </Match>
-                                <Match when={tab() === 'ast-tree' && module()}>
-                                    <Toolbar>
-                                        <button
-                                            type={'button'}
-                                            title={'Toggle AST groups'}
-                                            onClick={() => setShowGroups(!showGroups())}
-                                        >
-                                            <i class="fa-solid fa-layer-group" />
-                                        </button>
-                                    </Toolbar>
-                                    <AstTreePreview node={destructureAstNode(module()!)} />
-                                </Match>
-                                <Match when={tab() === 'diagnostics' || !module()}>
-                                    <div class={styles.errors}>
-                                        <For each={allErrors()}>
-                                            {({ message, span }) => (
-                                                <LangError message={message} span={span} source={source()} />
-                                            )}
-                                        </For>
-                                    </div>
-                                </Match>
-                            </Switch>
+                        <Match when={tab() === 'parse-tree' && module()}>
+                            <ParseTreePreview node={module()!.parseNode} />
+                        </Match>
+                        <Match when={tab() === 'ast-tree' && module()}>
+                            <Toolbar>
+                                <button
+                                    type={'button'}
+                                    title={'Toggle AST groups'}
+                                    onClick={() => setShowGroups(!showGroups())}
+                                >
+                                    <i class="fa-solid fa-layer-group" />
+                                </button>
+                            </Toolbar>
+                            <AstTreePreview node={destructureAstNode(module()!)} />
+                        </Match>
+                        <Match when={tab() === 'diagnostics' || !module() || semanticErrors()}>
+                            <div class={styles.errors}>
+                                <For each={allErrors()}>
+                                    {({ message, span }) => (
+                                        <LangError message={message} span={span} source={source()} />
+                                    )}
+                                </For>
+                            </div>
+                        </Match>
+                        <Match when={tab() === 'emitted-declaration' && declarationEmit() !== undefined}>
+                            <div
+                                ref={declarationEditorContainer}
+                                class={`${styles.secondaryEditor} ${styles.editorContainer}`}
+                            />
+                        </Match>
+                        <Match when={tab() === 'emitted-output' && outputEmit() !== undefined}>
+                            <div
+                                ref={outputEditorContainer}
+                                class={`${styles.secondaryEditor} ${styles.editorContainer}`}
+                            />
                         </Match>
                     </Switch>
                 </div>
@@ -260,6 +307,8 @@ const Header: Component = () => {
                     <option value={'parse-tree'}>{'Parse tree'}</option>
                     <option value={'ast-tree'}>{'AST tree'}</option>
                     <option value={'diagnostics'}>{'Diagnostics'}</option>
+                    <option value={'emitted-declaration'}>{'Declaration file'}</option>
+                    <option value={'emitted-output'}>{'Compiler output'}</option>
                 </select>
                 <div class={styles.right}>
                     <a ref={shareButton} title={'Copy playground link'} onClick={copyLinkToClipboard}>
@@ -272,11 +321,6 @@ const Header: Component = () => {
             </div>
         </div>
     )
-}
-
-interface RefSpanPair {
-    ref: HTMLDivElement
-    span: Span
 }
 
 const check = (std: Package, module: Module): Context => {

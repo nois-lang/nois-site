@@ -1,5 +1,6 @@
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { javascript } from '@codemirror/lang-javascript'
 import { rust } from '@codemirror/lang-rust'
 import { HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
 import { Diagnostic, lintKeymap, linter } from '@codemirror/lint'
@@ -8,6 +9,7 @@ import { Compartment, StateEffect, StateField } from '@codemirror/state'
 import {
     Decoration,
     EditorView,
+    ViewUpdate,
     drawSelection,
     highlightActiveLine,
     highlightActiveLineGutter,
@@ -95,7 +97,14 @@ export const highlightExtension = StateField.define({
     provide: f => EditorView.decorations.from(f)
 })
 
-export const createEditor = (container: HTMLDivElement, value: string): EditorView => {
+export interface CreateEditorOptions {
+    container?: HTMLDivElement
+    value?: string
+    onChange?: (update: ViewUpdate) => void
+    lang?: 'nois' | 'js'
+}
+
+export const createEditor = (options: CreateEditorOptions): EditorView => {
     const style = HighlightStyle.define([
         { tag: tags.comment, color: 'var(--hl-comment)' },
         { tag: tags.keyword, color: 'var(--hl-keyword)' },
@@ -116,10 +125,8 @@ export const createEditor = (container: HTMLDivElement, value: string): EditorVi
             highlightActiveLine(),
             keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...completionKeymap, ...lintKeymap]),
             syntaxHighlighting(style),
-            rust(),
-            EditorView.updateListener.of(e => {
-                setCode(e.state.doc.toString())
-            }),
+            options.lang === 'js' ? javascript() : rust(),
+            EditorView.updateListener.of(options.onChange ?? (() => {})),
             indentUnit.of(' '.repeat(4)),
             indentationMarkers({
                 hideFirstIndent: true,
@@ -129,8 +136,8 @@ export const createEditor = (container: HTMLDivElement, value: string): EditorVi
             linterCompartment.of(linter(diagnostics, { delay: 100 })),
             highlightExtension
         ],
-        parent: container,
-        doc: value
+        parent: options.container,
+        doc: options.value ?? ''
     })
     return ed
 }

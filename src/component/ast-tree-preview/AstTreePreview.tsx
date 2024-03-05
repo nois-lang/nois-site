@@ -3,7 +3,7 @@ import { ParseNode, getSpan } from 'nois/parser'
 import { Typed } from 'nois/semantic'
 import { virtualTypeToString } from 'nois/typecheck'
 import { Component, Match, Switch } from 'solid-js'
-import { hovered, setHovered, showGroups } from '../playground/Playground'
+import { hovered, setHovered, showGroups } from '../../state'
 import styles from './AstTreePreview.module.scss'
 
 export interface DestructuredAstNode {

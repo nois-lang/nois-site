@@ -1,6 +1,6 @@
 import { ParseNode, getSpan } from 'nois/parser'
 import { Component } from 'solid-js'
-import { hovered, setHovered } from '../playground/Playground'
+import { hovered, setHovered } from '../../state'
 import styles from './ParseTreePreview.module.scss'
 
 type ParseTreePreviewProps = { node: ParseNode }
