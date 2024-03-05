@@ -3,31 +3,31 @@
 Welcome to the Nois programming language documentation.
 
 ```rust
-use std::math
+use std::{ math::pi, iter::MapAdapter }
 
 trait Area {
-    fn area(self): Num
+    fn area(self): Float
 }
 
 type Shape {
-    Rect(width: Num, height: Num),
-    Circle(radius: Num),
+    Rect(width: Float, height: Float),
+    Circle(radius: Float),
 }
 
 impl Area for Shape {
-    fn area(self): Num {
+    fn area(self): Float {
         match self {
-            Rect(width, height) -> width * height
-            Circle(radius) -> math::pi * radius ^ 2
+            Shape::Rect(width, height) { width * height }
+            Shape::Circle(radius) { pi * radius ^ 2. }
         }
     }
 }
 
 fn main() {
     let shapes: List<Shape> = [
-        Rect(width: 4, height: 2),
-        Circle(radius: 12.34),
+        Shape::Rect(width: 4., height: 2.),
+        Shape::Circle(radius: 12.34),
     ]
-    println(shapes)
+    println(shapes.iter().map(Area::area).collect<List<_>>())
 }
 ```
