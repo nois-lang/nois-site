@@ -148,7 +148,7 @@ export const Playground: Component = () => {
                 setModule(mod)
                 const stdPkg = std()
                 if (stdPkg) {
-                    const ctx = check(stdPkg, mod)
+                    const ctx = await new Promise<Context>(done => done(check(stdPkg, mod)))
                     ds.push(
                         ...ctx.errors
                             .filter(e => e.module === mod)
