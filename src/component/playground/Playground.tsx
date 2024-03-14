@@ -78,6 +78,7 @@ export const Playground: Component = () => {
         })
         ed.focus()
         buildPackageFromVids('std', stdModuleVids).then(pkg => {
+            pkg.compiled = true
             setStd(pkg)
             // force diagnostics to appear once std is set
             ed?.dispatch({ effects: linterCompartment.reconfigure(makeLinter) })
@@ -130,7 +131,8 @@ export const Playground: Component = () => {
         }
     })
 
-    const updateCode = () => {
+    const updateCode = async () => {
+        if (!std()) return
         try {
             useColoredOutput(false)
             const tokens = tokenize(source().code)
@@ -335,7 +337,8 @@ const check = (std: Package, module: Module): Context => {
         warnings: [],
         check: false,
         silent: false,
-        variableCounter: 0
+        variableCounter: 0,
+        relChainsMemo: new Map()
     }
     ctx.packages.forEach(p => p.modules.forEach(m => prepareModule(m)))
     ctx.impls = buildInstanceRelations(ctx)
