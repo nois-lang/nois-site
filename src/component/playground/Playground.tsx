@@ -132,7 +132,8 @@ export const Playground: Component = () => {
     })
 
     const updateCode = async () => {
-        if (!std()) return
+        const stdPkg = std()
+        if (!stdPkg) return
         try {
             useColoredOutput(false)
             const tokens = tokenize(source().code)
@@ -148,40 +149,37 @@ export const Playground: Component = () => {
             if (errorTs.length === 0 && parser.errors.length === 0) {
                 const mod = buildModuleAst(parseTree, vid, source(), true)
                 setModule(mod)
-                const stdPkg = std()
-                if (stdPkg) {
-                    const ctx = await new Promise<Context>(done => done(check(stdPkg, mod)))
-                    ds.push(
-                        ...ctx.errors
-                            .filter(e => e.module === mod)
-                            .map(e => {
-                                const range = getSpan(e.node.parseNode)
-                                return {
-                                    from: range.start,
-                                    to: range.end,
-                                    severity: 'error' as const,
-                                    message: e.message
-                                }
-                            })
-                    )
-                    ds.push(
-                        ...ctx.warnings
-                            .filter(e => e.module === mod)
-                            .map(e => {
-                                const range = getSpan(e.node.parseNode)
-                                return {
-                                    from: range.start,
-                                    to: range.end,
-                                    severity: 'warning' as const,
-                                    message: e.message
-                                }
-                            })
-                    )
-                    setSemanticErrors(ctx.errors.length !== 0 ? ctx.errors : undefined)
+                const ctx = await new Promise<Context>(done => done(check(stdPkg, mod)))
+                ds.push(
+                    ...ctx.errors
+                        .filter(e => e.module === mod)
+                        .map(e => {
+                            const range = getSpan(e.node.parseNode)
+                            return {
+                                from: range.start,
+                                to: range.end,
+                                severity: 'error' as const,
+                                message: e.message
+                            }
+                        })
+                )
+                ds.push(
+                    ...ctx.warnings
+                        .filter(e => e.module === mod)
+                        .map(e => {
+                            const range = getSpan(e.node.parseNode)
+                            return {
+                                from: range.start,
+                                to: range.end,
+                                severity: 'warning' as const,
+                                message: e.message
+                            }
+                        })
+                )
+                setSemanticErrors(ctx.errors.length !== 0 ? ctx.errors : undefined)
 
-                    setDeclarationEmit(ctx.errors.length === 0 ? emitDeclaration(mod) : undefined)
-                    setOutputEmit(ctx.errors.length === 0 ? emitModule(mod, ctx, 'main') : undefined)
-                }
+                setDeclarationEmit(ctx.errors.length === 0 ? emitDeclaration(mod) : undefined)
+                setOutputEmit(ctx.errors.length === 0 ? emitModule(mod, ctx, 'main') : undefined)
             } else {
                 setModule(undefined)
                 setSemanticErrors(undefined)
