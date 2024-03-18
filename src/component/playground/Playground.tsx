@@ -16,6 +16,7 @@ import { buildInstanceRelations } from 'nois/scope/trait'
 import { checkModule, checkTopLevelDefinition, prepareModule } from 'nois/semantic'
 import { SemanticError } from 'nois/semantic/error'
 import { Source } from 'nois/source'
+import { foldEmitTree } from 'nois/sourcemap'
 import { stdModuleVids } from 'nois/std-index'
 import { Component } from 'solid-js'
 import { For, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
@@ -179,7 +180,7 @@ export const Playground: Component = () => {
                 setSemanticErrors(ctx.errors.length !== 0 ? ctx.errors : undefined)
 
                 setDeclarationEmit(ctx.errors.length === 0 ? emitDeclaration(mod) : undefined)
-                setOutputEmit(ctx.errors.length === 0 ? emitModule(mod, ctx, 'main') : undefined)
+                setOutputEmit(ctx.errors.length === 0 ? foldEmitTree(emitModule(mod, ctx, 'main')).emit : undefined)
             } else {
                 setModule(undefined)
                 setSemanticErrors(undefined)
