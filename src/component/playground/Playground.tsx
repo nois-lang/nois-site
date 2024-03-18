@@ -1,6 +1,7 @@
 import { Diagnostic } from '@codemirror/lint'
 import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
+import { js_beautify } from 'js-beautify'
 import { Module, buildModuleAst } from 'nois/ast'
 import { emitDeclaration } from 'nois/codegen/declaration'
 import { emitModule } from 'nois/codegen/js'
@@ -121,7 +122,7 @@ export const Playground: Component = () => {
         }
         if (tab() === 'emitted-output' && outputEmit() && outputEditorContainer) {
             if (outputEd) {
-                outputEd?.dispatch({
+                outputEd.dispatch({
                     changes: { from: 0, to: outputEd.state.doc.length, insert: outputEmit() }
                 })
             } else {
@@ -180,7 +181,17 @@ export const Playground: Component = () => {
                 setSemanticErrors(ctx.errors.length !== 0 ? ctx.errors : undefined)
 
                 setDeclarationEmit(ctx.errors.length === 0 ? emitDeclaration(mod) : undefined)
-                setOutputEmit(ctx.errors.length === 0 ? foldEmitTree(emitModule(mod, ctx, 'main')).emit : undefined)
+
+                if (ctx.errors.length === 0) {
+                    const jsOutput = foldEmitTree(emitModule(mod, ctx, 'main')).emit
+                    const prettyOutput = js_beautify(jsOutput)
+                    const out = prettyOutput.replace(/import\s*{[^}]*}[^;]*;/g, match =>
+                        match.replace(/\n/g, ' ').replace(/ +/g, ' ')
+                    )
+                    setOutputEmit(out)
+                } else {
+                    setOutputEmit(undefined)
+                }
             } else {
                 setModule(undefined)
                 setSemanticErrors(undefined)

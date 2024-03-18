@@ -22,6 +22,7 @@
     "homepage": "https://github.com/nois-lang/nois-site#readme",
     "devDependencies": {
         "@rollup/plugin-terser": "^0.4.4",
+        "@types/js-beautify": "^1.14.3",
         "rollup": "^4.13.0",
         "solid-devtools": "~0.29.2",
         "terser": "^5.29.2",
@@ -43,6 +44,7 @@
         "@replit/codemirror-indentation-markers": "~6.5.0",
         "@solidjs/router": "~0.10.9",
         "codemirror": "~6.0.1",
+        "js-beautify": "^1.15.1",
         "nois": "./../nois/dist",
         "sass": "~1.69.7",
         "solid-js": "~1.8.11",
