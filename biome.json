@@ -8,17 +8,16 @@
     "linter": {
         "rules": {
             "recommended": true,
-            "nursery": {
-                "noUnusedImports": "warn",
-                "useImportType": "off"
-            },
             "correctness": {
-                "noSwitchDeclarations": "off"
+                "noSwitchDeclarations": "off",
+                "noUnusedImports": "warn"
             },
             "suspicious": {
+                "noConsoleLog": "warn",
                 "noExplicitAny": "off",
                 "noShadowRestrictedNames": "off",
-                "noConfusingVoidType": "off"
+                "noConfusingVoidType": "off",
+                "noThenProperty": "off"
             },
             "complexity": {
                 "noForEach": "off"
@@ -29,7 +28,12 @@
                 "noInferrableTypes": "off",
                 "noUselessElse": "off",
                 "useTemplate": "off",
-                "noParameterAssign": "off"
+                "noParameterAssign": "off",
+                "noDefaultExport": "warn",
+                "noNamespace": "warn",
+                "useNamingConvention": "warn",
+                "useImportType": "off",
+                "useNodejsImportProtocol": "off"
             },
             "a11y": {
                 "useValidAnchor": "off"
