@@ -70,8 +70,15 @@ export const linterCompartment = new Compartment()
 export const makeLinter = linter(diagnostics, { delay: 0 })
 
 export const formatError = (error: Error, code: string): string => {
-    const errorMsg = error.stack ?? `${error.name}: ${error.message}`
-    return `Code: ${JSON.stringify(code)}\n${errorMsg}`
+    const errorMsg = `${error.name}: ${error.message}${
+        error.stack
+            ? `\n${error.stack
+                  .split('\n')
+                  .map(l => `    ${l}`)
+                  .join('\n')}`
+            : ''
+    }`
+    return `${errorMsg}\ncode: ${JSON.stringify(code)}`
 }
 
 export const highlightEffect = StateEffect.define<any>()
