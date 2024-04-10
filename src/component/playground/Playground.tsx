@@ -183,6 +183,7 @@ export const Playground: Component = () => {
                 setDeclarationEmit(ctx.errors.length === 0 ? emitDeclaration(mod) : undefined)
 
                 if (ctx.errors.length === 0) {
+                    ctx.moduleStack.push(mod)
                     const jsOutput = foldEmitTree(emitModule(mod, ctx, true)).emit
                     const prettyOutput = js_beautify(jsOutput)
                     const out = prettyOutput.replace(/import\s*{[^}]*}[^;]*;/g, match =>

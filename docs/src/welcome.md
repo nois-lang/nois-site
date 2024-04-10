@@ -31,7 +31,7 @@ pub fn main() {
     println(
         shapes
             .iter()
-            .map(|s| { s.area() })
+            .map(|s| s.area())
             .collect<List<_>>()
             .show()
     )
