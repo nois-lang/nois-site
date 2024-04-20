@@ -18,6 +18,7 @@ import {
 } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { indentationMarkers } from '@replit/codemirror-indentation-markers'
+import { vim } from '@replit/codemirror-vim'
 import { createSignal } from 'solid-js'
 
 export const exampleMap = {
@@ -63,11 +64,16 @@ pub fn main() {
 
 export type CodeExample = keyof typeof exampleMap
 
+export type Mode = 'default' | 'vim'
+export const [mode, setMode] = createSignal<Mode>('default')
+
 export const [code, setCode] = createSignal(exampleMap.welcome)
 export const [diagnostics, setDiagnostics] = createSignal<Diagnostic[]>([])
 
 export const linterCompartment = new Compartment()
 export const makeLinter = linter(diagnostics, { delay: 0 })
+
+export const vimCompartment = new Compartment()
 
 export const formatError = (error: Error, code: string): string => {
     const errorMsg = `${error.name}: ${error.message}${
@@ -147,7 +153,8 @@ export const createEditor = (options: CreateEditorOptions): EditorView => {
                 colors: { light: 'var(--bg2)', activeLight: 'var(--bg2)', dark: 'var(--bg2)', activeDark: 'var(--bg2)' }
             }),
             linterCompartment.of(linter(diagnostics, { delay: 100 })),
-            highlightExtension
+            highlightExtension,
+            vimCompartment.of([]),
         ],
         parent: options.container,
         doc: options.value ?? ''

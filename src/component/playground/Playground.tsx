@@ -1,4 +1,5 @@
 import { Diagnostic } from '@codemirror/lint'
+import { vim } from '@replit/codemirror-vim'
 import { A, useSearchParams } from '@solidjs/router'
 import { EditorView } from 'codemirror'
 import { js_beautify } from 'js-beautify'
@@ -24,6 +25,7 @@ import { For, Match, Switch, createEffect, createSignal, onMount } from 'solid-j
 import logo from '../../assets/logo_full.svg'
 import {
     CodeExample,
+    Mode,
     code,
     createEditor,
     exampleMap,
@@ -32,9 +34,12 @@ import {
     highlightEffect,
     linterCompartment,
     makeLinter,
+    mode,
     rmHighlightEffect,
     setCode,
-    setDiagnostics
+    setDiagnostics,
+    setMode,
+    vimCompartment
 } from '../../editor'
 import { decode, encode } from '../../encode'
 import { buildPackageFromVids } from '../../package'
@@ -131,6 +136,10 @@ export const Playground: Component = () => {
         } else {
             outputEd = undefined
         }
+    })
+
+    createEffect(() => {
+        ed?.dispatch({ effects: vimCompartment.reconfigure(mode() === 'vim' ? vim() : []) })
     })
 
     const updateCode = async () => {
@@ -304,16 +313,23 @@ const Header: Component = () => {
         await navigator.clipboard.writeText(url)
         showTooltip(shareButton!, 'copied!')
     }
+
     return (
         <div class={styles.header}>
             <div class={styles.left}>
                 <A href={'/'} class={styles.logo}>
                     <img src={logo} alt={'Nois logo'} />
                 </A>
-                <select onChange={e => setExample(e.target.value as CodeExample)} value={example()}>
-                    <option value={'welcome'}>{'Welcome'}</option>
-                    <option value={'helloWorld'}>{'Hello world'}</option>
-                </select>
+                <div class={styles.right}>
+                    <select onChange={e => setMode(e.target.value as Mode)} value={mode()}>
+                        <option value={'default'}>{'Default'}</option>
+                        <option value={'vim'}>{'Vim'}</option>
+                    </select>
+                    <select onChange={e => setExample(e.target.value as CodeExample)} value={example()}>
+                        <option value={'welcome'}>{'Welcome'}</option>
+                        <option value={'helloWorld'}>{'Hello world'}</option>
+                    </select>
+                </div>
             </div>
             <div class={styles.right}>
                 <select onChange={e => setTab(e.target.value as Tab)} value={tab()}>
