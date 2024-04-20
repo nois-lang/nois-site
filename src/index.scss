@@ -17,6 +17,7 @@
     --hl-string: #3a6e1f;
     --indent-markers: repeating-linear-gradient(to right, var(--indent-marker-bg-color) 0 1px, transparent 1px 4ch)
         4.5ch / calc(8ch - 1px) no-repeat !important;
+    --active-line-color: rgba(0, 0, 0, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,6 +33,7 @@
         --hl-keyword: #d3a8ef;
         --hl-number: #ffb499;
         --hl-string: #a6d189;
+        --active-line-color: rgba(255, 255, 255, 0.08);
     }
 }
 
@@ -136,12 +138,8 @@ select {
         font-family: 'JetBrains Mono', monospace;
     }
 
-    .cm-content {
-        padding: 4px;
-    }
-
     .cm-line {
-        padding: 0;
+        padding-inline: 4px;
     }
 
     .cm-cursor {
@@ -149,7 +147,7 @@ select {
     }
 
     .cm-activeLine {
-        background-color: var(--bg2);
+        background-color: var(--active-line-color);
     }
 
     .cm-gutters {
