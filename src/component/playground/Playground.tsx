@@ -196,7 +196,7 @@ export const Playground: Component = () => {
                     const jsOutput = foldEmitTree(emitModule(mod, ctx, true)).emit
                     const prettyOutput = js_beautify(jsOutput)
                     const out = prettyOutput.replace(/import\s*{[^}]*}[^;]*;/g, match =>
-                        match.replace(/\n/g, ' ').replace(/ +/g, ' ')
+                        match.length < 120 ? match.replace(/\n/g, ' ').replace(/ +/g, ' ') : match
                     )
                     setOutputEmit(out)
                 } else {
