@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-git clone https://github.com/nois-lang/nois ../nois
+git clone https://github.com/nois-lang/noisc ../noisc
 pushd .
-cd ../nois
+cd ../noisc
 npm install
 npm run publish
 ls dist
